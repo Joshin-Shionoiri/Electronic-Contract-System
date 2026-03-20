@@ -1,10 +1,55 @@
-<div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
+<div id="header" style="
+    background:#1e293b;
+    color:white;
+    padding:12px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+">
+    <div style="font-size:20px; font-weight:700;">電子契約システム</div>
 
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
+    <div id="nav"></div>
 </div>
+
+<script>
+// loginUser は common.js で読み込まれている前提
+
+function renderHeader() {
+    const nav = document.getElementById("nav");
+
+    // ログインしていない
+    if (!loginUser) {
+        nav.innerHTML = `
+            <a href="login.html" style="color:white; margin-right:15px;">ログイン</a>
+            <a href="customers.html" style="color:white; margin-right:15px;">顧客管理</a>
+            <a href="barcode.html" style="color:white;">バーコード生成</a>
+        `;
+        return;
+    }
+
+    // 顧客ログイン
+    if (loginUser.type === "customer") {
+        nav.innerHTML = `
+            <span style="margin-right:20px;">${loginUser.name} さん</span>
+            <a href="mypage.html" style="color:white; margin-right:15px;">マイページ</a>
+            <a href="contracts.html" style="color:white; margin-right:15px;">契約手続き</a>
+            <a href="#" onclick="logout()" style="color:white;">ログアウト</a>
+        `;
+        return;
+    }
+
+    // 社員ログイン
+    if (loginUser.type === "employee") {
+        nav.innerHTML = `
+            <span style="margin-right:20px;">${loginUser.name} さん</span>
+            <a href="customers.html" style="color:white; margin-right:15px;">顧客管理</a>
+            <a href="employees.html" style="color:white; margin-right:15px;">契約登録</a>
+            <a href="barcode.html" style="color:white; margin-right:15px;">バーコード生成</a>
+            <a href="#" onclick="logout()" style="color:white;">ログアウト</a>
+        `;
+        return;
+    }
+}
+
+renderHeader();
+</script>
