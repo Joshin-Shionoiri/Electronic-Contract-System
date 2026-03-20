@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>契約登録（社員用）</title>
+    <title>契約登録</title>
     <link rel="stylesheet" href="common.css">
     <style>
         .section-title {
@@ -12,6 +12,7 @@
             color: #1e293b;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
 
@@ -21,13 +22,16 @@
 fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
 </script>
 
-<h2>契約登録（社員用）</h2>
+<h2>契約登録</h2>
 
 <div class="card">
     <div class="section-title">① 顧客選択</div>
-    <label>顧客</label>
-    <select id="customerSelect"></select>
-    <button onclick="scanCustomerBarcode()">顧客バーコードを読み取る</button>
+    <label>顧客コード（CU-000123）</label>
+<div style="display:flex; gap:10px; align-items:center;">
+    <input id="customerCode" style="flex:1;">
+    <button onclick="startCustomerBarcode()">バーコードを読み取る</button>
+</div>
+
 </div>
 
 <div class="card">
@@ -115,26 +119,80 @@ function loadCustomers() {
 // ===============================
 // 顧客バーコード読み取り（対面契約）
 // ===============================
-function scanCustomerBarcode() {
-    alert("ここで顧客番号バーコードを読み取る処理を実装（QuaggaJSなど）");
+function startCustomerBarcode() {
+    document.getElementById("scannerModal").style.display = "flex";
 
-    // ★ デモ用
-    const scanned = "CU-000123";
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            target: document.querySelector('#scanner'),
+            constraints: { facingMode: "environment" }
+        },
+        decoder: {
+            readers: ["code_128_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            alert("カメラを起動できませんでした。");
+            return;
+        }
+        Quagga.start();
+    });
 
-    const select = document.getElementById("customerSelect");
-    select.value = scanned;
+    Quagga.onDetected(function(result) {
+        const scannedCode = result.codeResult.code;
+
+        stopScanner();
+
+        // ★ 読み取った顧客コードを自動入力
+        document.getElementById("customerCode").value = scannedCode;
+    });
 }
+
+function stopScanner() {
+    Quagga.stop();
+    document.getElementById("scannerModal").style.display = "none";
+}
+
 
 // ===============================
 // 契約書番号のQR読み取り
 // ===============================
-function scanContractQR() {
-    alert("ここで契約書QRコードを読み取る処理を実装（QRライブラリなど）");
+function startCustomerBarcode() {
+    document.getElementById("scannerModal").style.display = "flex";
 
-    // ★ デモ用
-    const scanned = "CN-20260320-0001";
-    document.getElementById("contractNumber").value = scanned;
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            target: document.querySelector('#scanner'),
+            constraints: { facingMode: "environment" }
+        },
+        decoder: {
+            readers: ["code_128_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            alert("カメラを起動できませんでした。");
+            return;
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        const scannedCode = result.codeResult.code;
+
+        stopScanner();
+
+        // ★ 読み取った顧客コードを自動入力
+        document.getElementById("customerCode").value = scannedCode;
+    });
 }
+
+function stopScanner() {
+    Quagga.stop();
+    document.getElementById("scannerModal").style.display = "none";
+}
+
 
 // ===============================
 // 契約書番号フォーマットチェック
@@ -218,6 +276,13 @@ async function registerContract() {
 }
 
 </script>
+<div id="scannerModal" style="display:none; ...">
+    <div style="background:white; padding:20px; text-align:center;">
+        <h3>バーコードを読み取っています…</h3>
+        <div id="scanner" style="width:300px; height:200px;"></div>
+        <button onclick="stopScanner()">閉じる</button>
+    </div>
+</div>
 
 </body>
 </html>
