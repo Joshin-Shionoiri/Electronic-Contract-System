@@ -2,78 +2,166 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>社員アカウント管理</title>
+    <title>社員作成</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        input { padding: 8px; margin: 5px 0; width: 250px; }
-        button { padding: 8px 15px; margin-top: 10px; }
-        table { border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px 12px; }
+        body {
+            font-family: sans-serif;
+            background: #f0f6ff;
+            padding: 30px;
+        }
+
+        h2 {
+            color: #0078D4;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #005a9e;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        button {
+            background: #0078D4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 25px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 13px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-<h2>社員アカウント作成</h2>
+<h2>社員作成</h2>
 
-<input id="empId" placeholder="社員ID">
-<br>
-<input id="empPass" type="password" placeholder="パスワード">
-<br>
-<button onclick="addEmployee()">登録</button>
+<div class="card">
+    <label>社員名：</label>
+    <input id="employeeName">
+
+    <button onclick="registerEmployee()">登録</button>
+</div>
 
 <h3>社員一覧</h3>
-<table id="empTable">
+<table id="employeesTable">
     <tr>
-        <th>社員ID</th>
-        <th>削除</th>
+        <th>社員コード</th>
+        <th>社員名</th>
+        <th>ログインパスワード</th>
     </tr>
 </table>
 
+<div class="footer">
+    © JOSHIN SYSTEMS
+</div>
+
 <script>
-// ローカルストレージから読み込み
+// 社員データ
 let employees = JSON.parse(localStorage.getItem("employees") || "[]");
 
-function renderTable() {
-    const table = document.getElementById("empTable");
-    table.innerHTML = `
-        <tr>
-            <th>社員ID</th>
-            <th>削除</th>
-        </tr>
-    `;
+// 社員コード自動生成（ABC-12345）
+function generateEmployeeCode() {
+    const letters = Array.from({length: 3}, () =>
+        String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    ).join("");
 
-    employees.forEach((emp, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${emp.id}</td>
-            <td><button onclick="deleteEmployee(${index})">削除</button></td>
-        `;
-        table.appendChild(row);
-    });
+    const numbers = String(Math.floor(Math.random() * 99999) + 1).padStart(5, "0");
+
+    return `${letters}-${numbers}`;
 }
 
-function addEmployee() {
-    const id = document.getElementById("empId").value;
-    const pass = document.getElementById("empPass").value;
+// パスワード自動生成
+function generatePassword() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let pass = "";
+    for (let i = 0; i < 10; i++) {
+        pass += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return pass;
+}
 
-    if (!id || !pass) {
-        alert("社員IDとパスワードを入力してください。");
+// 社員登録
+function registerEmployee() {
+    const name = document.getElementById("employeeName").value.trim();
+    if (!name) {
+        alert("社員名を入力してください。");
         return;
     }
 
-    employees.push({ id, pass });
+    const code = generateEmployeeCode();
+    const pass = generatePassword();
+
+    employees.push({
+        employeeCode: code,
+        employeeName: name,
+        password: pass
+    });
+
     localStorage.setItem("employees", JSON.stringify(employees));
 
-    document.getElementById("empId").value = "";
-    document.getElementById("empPass").value = "";
+    document.getElementById("employeeName").value = "";
 
     renderTable();
 }
 
-function deleteEmployee(index) {
-    employees.splice(index, 1);
-    localStorage.setItem("employees", JSON.stringify(employees));
-    renderTable();
+// 社員一覧表示
+function renderTable() {
+    const table = document.getElementById("employeesTable");
+
+    table.innerHTML = `
+        <tr>
+            <th>社員コード</th>
+            <th>社員名</th>
+            <th>ログインパスワード</th>
+        </tr>
+    `;
+
+    employees.forEach(e => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${e.employeeCode}</td>
+            <td>${e.employeeName}</td>
+            <td>${e.password}</td>
+        `;
+        table.appendChild(row);
+    });
 }
 
 renderTable();
