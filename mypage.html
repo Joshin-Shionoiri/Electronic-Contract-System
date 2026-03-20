@@ -4,9 +4,32 @@
     <meta charset="UTF-8">
     <title>マイページ</title>
     <link rel="stylesheet" href="common.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #f1f5f9;
+        }
+        .status-ok {
+            color: green;
+            font-weight: bold;
+        }
+        .status-ng {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
+<!-- 共通ヘッダー -->
 <div id="common-header"></div>
 <script>
 fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
@@ -14,136 +37,133 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
 
 <h2>マイページ</h2>
 
-<div class="card">
-    <h3>基本情報</h3>
-    <label>名前</label>
-    <input id="nameInput">
-    <label>メールアドレス</label>
-    <input id="emailInput">
-    <label>電話番号</label>
-    <input id="phoneInput">
-    <button onclick="saveProfile()">保存</button>
-</div>
+<p>ようこそ、<span id="userName"></span> さん</p>
 
 <div class="card">
-    <h3>パスワード変更</h3>
-    <label>新しいパスワード</label>
-    <input id="newPass" type="password">
-    <button onclick="changePassword()">パスワードを変更</button>
-</div>
-
-<div class="card" id="customerContracts" style="display:none;">
     <h3>契約一覧</h3>
-    <table id="contractsTable">
-        <tr>
-            <th>契約書番号</th>
-            <th>プラン名</th>
-            <th>PDF</th>
-        </tr>
+
+    <table id="contractTable">
+        <thead>
+            <tr>
+                <th>契約書番号</th>
+                <th>契約名</th>
+                <th>期間</th>
+                <th>金額</th>
+                <th>署名状況</th>
+                <th>PDF</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
     </table>
 </div>
 
-<div class="card" id="employeeInfo" style="display:none;">
-    <h3>権限情報</h3>
-    <p>あなたは <strong>社員</strong> としてログインしています。</p>
-    <p>全機能にアクセスできます。</p>
-</div>
-
-<div class="footer">© JOSHIN SYSTEMS</div>
-
 <script src="common.js"></script>
 <script>
-// プロフィール初期表示
-document.getElementById("nameInput").value = loginUser.name || "";
-document.getElementById("emailInput").value = loginUser.email || "";
-document.getElementById("phoneInput").value = loginUser.phone || "";
-
-function saveProfile() {
-    loginUser.name = document.getElementById("nameInput").value.trim();
-    loginUser.email = document.getElementById("emailInput").value.trim();
-    loginUser.phone = document.getElementById("phoneInput").value.trim();
-    localStorage.setItem("loginUser", JSON.stringify(loginUser));
-    alert("保存しました。");
-    location.reload();
-}
-
-function changePassword() {
-    const newPass = document.getElementById("newPass").value.trim();
-    if (!newPass) {
-        alert("パスワードを入力してください。");
+// ===============================
+// ページ読み込み時
+// ===============================
+window.onload = function() {
+    if (!loginUser || loginUser.type !== "customer") {
+        alert("顧客としてログインしてください。");
+        location.href = "login.html";
         return;
     }
-    if (loginUser.type === "employee") {
-        const employees = JSON.parse(localStorage.getItem("employees") || "[]");
-        const user = employees.find(e => e.employeeCode === loginUser.code);
-        if (user) {
-            user.password = newPass;
-            localStorage.setItem("employees", JSON.stringify(employees));
-        }
-    }
-    if (loginUser.type === "customer") {
-        const customers = JSON.parse(localStorage.getItem("customers") || "[]");
-        const user = customers.find(c => c.customerCode === loginUser.code);
-        if (user) {
-            user.password = newPass;
-            localStorage.setItem("customers", JSON.stringify(customers));
-        }
-    }
-    alert("パスワードを変更しました。");
-}
 
-// 顧客なら契約一覧
-if (loginUser.type === "customer") {
-    document.getElementById("customerContracts").style.display = "block";
-    const table = document.getElementById("contractsTable");
-    const req = indexedDB.open("contractsDB", 1);
-    req.onsuccess = function(e) {
-        const db = e.target.result;
+    document.getElementById("userName").textContent = loginUser.name;
+
+    loadContracts();
+};
+
+// ===============================
+// 契約一覧を読み込む
+// ===============================
+function loadContracts() {
+    const request = indexedDB.open("contractsDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
         const tx = db.transaction("contracts", "readonly");
         const store = tx.objectStore("contracts");
-        store.openCursor().onsuccess = function(ev) {
-            const cursor = ev.target.result;
+
+        const tbody = document.querySelector("#contractTable tbody");
+        tbody.innerHTML = "";
+
+        store.openCursor().onsuccess = function(e) {
+            const cursor = e.target.result;
             if (cursor) {
                 const c = cursor.value;
+
+                // ログイン中の顧客の契約だけ表示
                 if (c.customerCode === loginUser.code) {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
+                    const tr = document.createElement("tr");
+
+                    const signed = c.signature ? true : false;
+
+                    tr.innerHTML = `
                         <td>${c.contractNumber}</td>
-                        <td>${c.planName}</td>
-                        <td><button onclick="viewPDF('${c.contractNumber}')">閲覧</button></td>
+                        <td>${c.contractName}</td>
+                        <td>${c.startDate} ～ ${c.endDate}</td>
+                        <td>${c.price} 円</td>
+                        <td class="${signed ? 'status-ok' : 'status-ng'}">
+                            ${signed ? '署名済み' : '未署名'}
+                        </td>
+                        <td>
+                            <button onclick="viewPDF('${c.contractNumber}')">PDF</button>
+                        </td>
+                        <td>
+                            ${signed 
+                                ? '-' 
+                                : `<button onclick="goSign('${c.contractNumber}')">署名する</button>`
+                            }
+                        </td>
                     `;
-                    table.appendChild(row);
+
+                    tbody.appendChild(tr);
                 }
+
                 cursor.continue();
             }
         };
     };
 }
 
-// 社員なら権限情報
-if (loginUser.type === "employee") {
-    document.getElementById("employeeInfo").style.display = "block";
-}
-
+// ===============================
 // PDF閲覧
+// ===============================
 function viewPDF(contractNumber) {
-    const req = indexedDB.open("contractsDB", 1);
-    req.onsuccess = function(e) {
-        const db = e.target.result;
+    const request = indexedDB.open("contractsDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
         const tx = db.transaction("contracts", "readonly");
         const store = tx.objectStore("contracts");
-        const g = store.get(contractNumber);
-        g.onsuccess = function() {
-            if (!g.result) {
+
+        const getReq = store.get(contractNumber);
+
+        getReq.onsuccess = function() {
+            const contract = getReq.result;
+            if (!contract || !contract.pdfData) {
                 alert("PDFが登録されていません。");
                 return;
             }
-            const blob = new Blob([g.result.pdfData], { type: "application/pdf" });
+
+            const blob = new Blob([contract.pdfData], { type: "application/pdf" });
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
         };
     };
 }
+
+// ===============================
+// 署名画面へ遷移
+// ===============================
+function goSign(contractNumber) {
+    // 契約書番号をセッションに保存して contracts.html へ
+    sessionStorage.setItem("signContractNumber", contractNumber);
+    location.href = "contracts.html";
+}
 </script>
+
 </body>
 </html>
