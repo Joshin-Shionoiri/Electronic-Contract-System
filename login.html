@@ -416,6 +416,119 @@ function loginEmployee(code, pass) {
     100% { top: calc(100% - 3px); }
 }
 </style>
+<script>
+let qrScanner = null;
+let barcodeActive = false;
+let detectedOnce = false;
+
+// ===============================
+// バーコード読み取り開始（Code128）
+// ===============================
+function startBarcodeReader(onDetectedCallback) {
+    barcodeActive = true;
+    detectedOnce = false;
+
+    document.getElementById("readerModal").style.display = "flex";
+    document.getElementById("readerTitle").textContent = "バーコードを読み取っています…";
+    document.getElementById("barcodeArea").style.display = "block";
+    document.getElementById("qrArea").style.display = "none";
+
+    document.getElementById("scanFrame").style.borderColor = "white";
+
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            target: document.querySelector('#barcodeArea'),
+            constraints: { facingMode: "environment" }
+        },
+        decoder: { readers: ["code_128_reader"] }
+    }, function(err) {
+        if (err) {
+            alert("カメラを起動できませんでした：" + err);
+            closeReader();
+            return;
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        if (detectedOnce) return;
+        detectedOnce = true;
+
+        document.getElementById("scanFrame").style.borderColor = "#22c55e";
+
+        const beep = document.getElementById("beepSound");
+        beep.currentTime = 0;
+        beep.play().catch(()=>{});
+
+        const code = result.codeResult.code;
+
+        setTimeout(() => {
+            closeReader();
+            onDetectedCallback(code);
+        }, 300);
+    });
+}
+
+
+// ===============================
+// QR読み取り開始
+// ===============================
+function startQRReader(onDetectedCallback) {
+    barcodeActive = false;
+    detectedOnce = false;
+
+    document.getElementById("readerModal").style.display = "flex";
+    document.getElementById("readerTitle").textContent = "QRコードを読み取っています…";
+    document.getElementById("barcodeArea").style.display = "none";
+    document.getElementById("qrArea").style.display = "block";
+
+    document.getElementById("scanFrame").style.borderColor = "white";
+
+    qrScanner = new Html5Qrcode("qrArea");
+
+    qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrMessage => {
+            if (detectedOnce) return;
+            detectedOnce = true;
+
+            document.getElementById("scanFrame").style.borderColor = "#22c55e";
+
+            const beep = document.getElementById("beepSound");
+            beep.currentTime = 0;
+            beep.play().catch(()=>{});
+
+            setTimeout(() => {
+                closeReader();
+                onDetectedCallback(qrMessage);
+            }, 300);
+        }
+    ).catch(err => {
+        alert("カメラを起動できませんでした：" + err);
+        closeReader();
+    });
+}
+
+
+// ===============================
+// 閉じる（× ボタン / 閉じるボタン）
+// ===============================
+function closeReader() {
+    if (barcodeActive) {
+        try { Quagga.stop(); } catch(e){}
+    }
+
+    if (qrScanner) {
+        qrScanner.stop().catch(()=>{});
+        qrScanner.clear();
+        qrScanner = null;
+    }
+
+    document.getElementById("readerModal").style.display = "none";
+}
+</script>
 
 </body>
 </html>
