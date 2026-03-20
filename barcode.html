@@ -2,131 +2,107 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>バーコード作成</title>
+    <title>バーコード生成</title>
+    <link rel="stylesheet" href="common.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
     <style>
-        body {
-            font-family: sans-serif;
-            background: #f0f6ff;
-            padding: 30px;
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1e293b;
         }
-
-        h2 {
-            color: #0078D4;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            max-width: 600px;
-        }
-
-        label {
-            font-weight: bold;
-            color: #005a9e;
-        }
-
-        select, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-
-        button {
-            background: #0078D4;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background: #005fa3;
-        }
-
-        #barcode {
-            margin-top: 30px;
-            text-align: center;
-        }
-
-        .footer {
-            margin-top: 40px;
-            color: #666;
-            font-size: 13px;
+        .barcode-box {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
             text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
 
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
-</div>
+<!-- 共通ヘッダー -->
+<div id="common-header"></div>
+<script>
+fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
+</script>
 
+<h2>バーコード生成</h2>
 
-<h2>バーコード作成</h2>
-
+<!-- 顧客番号バーコード -->
 <div class="card">
-    <label>顧客を選択：</label>
-    <select id="customerSelect"></select>
+    <div class="section-title">① 顧客番号バーコード（Code128）</div>
 
-    <button onclick="generateBarcode()">バーコード生成</button>
+    <label>顧客番号（CU-000123）</label>
+    <input id="customerCode" placeholder="CU-000123">
 
-    <div id="barcode"></div>
+    <button onclick="generateCustomerBarcode()">生成</button>
+
+    <div id="customerBarcodeArea" class="barcode-box"></div>
 </div>
 
-<div class="footer">
-    © JOSHIN SYSTEMS
-</div>
+<!-- 契約書番号QRコード -->
+<div class="card">
+    <div class="section-title">② 契約書番号QRコード</div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <label>契約書番号（CN-YYYYMMDD-XXXX）</label>
+    <input id="contractNumber" placeholder="CN-20260320-0001">
+
+    <button onclick="generateContractQR()">生成</button>
+
+    <div id="contractQRArea" class="barcode-box"></div>
+</div>
 
 <script>
-// 顧客データ読み込み
-const customers = JSON.parse(localStorage.getItem("customers") || "[]");
+// ===============================
+// 顧客番号バーコード生成（Code128）
+// ===============================
+function generateCustomerBarcode() {
+    const code = document.getElementById("customerCode").value.trim();
+    const area = document.getElementById("customerBarcodeArea");
 
-// 顧客一覧をプルダウンに表示
-function loadCustomers() {
-    const select = document.getElementById("customerSelect");
-    select.innerHTML = "";
+    area.innerHTML = ""; // 初期化
 
-    customers.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.customerCode;  // ← 顧客コードをそのまま使う
-        opt.textContent = `${c.customerCode}　${c.customerName}`;
-        select.appendChild(opt);
-    });
-}
+    if (!/^CU-\d{6}$/.test(code)) {
+        area.innerHTML = "<p style='color:red'>顧客番号の形式が正しくありません。</p>";
+        return;
+    }
 
-// バーコード生成
-function generateBarcode() {
-    const code = document.getElementById("customerSelect").value;
+    const svg = document.createElement("svg");
+    area.appendChild(svg);
 
-    document.getElementById("barcode").innerHTML = `
-        <svg id="barcodeSvg"></svg>
-    `;
-
-    JsBarcode("#barcodeSvg", code, {
+    JsBarcode(svg, code, {
         format: "CODE128",
         width: 2,
-        height: 70,
-        displayValue: true,
-        fontSize: 18
+        height: 50,
+        displayValue: true
     });
 }
 
-loadCustomers();
+// ===============================
+// 契約書番号QRコード生成
+// ===============================
+function generateContractQR() {
+    const num = document.getElementById("contractNumber").value.trim();
+    const area = document.getElementById("contractQRArea");
+
+    area.innerHTML = ""; // 初期化
+
+    if (!/^CN-\d{8}-\d{4}(_\d+)?$/.test(num)) {
+        area.innerHTML = "<p style='color:red'>契約書番号の形式が正しくありません。</p>";
+        return;
+    }
+
+    const canvas = document.createElement("canvas");
+    area.appendChild(canvas);
+
+    QRCode.toCanvas(canvas, num, { width: 200 }, function (error) {
+        if (error) console.error(error);
+    });
+}
 </script>
 
 </body>
