@@ -3,19 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>契約管理</title>
+    <link rel="stylesheet" href="common.css">
     <style>
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: #f4f6fb;
-            padding: 30px;
-            color: #333;
-        }
-
-        h2 {
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
         .step-bar {
             display: flex;
             align-items: center;
@@ -23,191 +12,70 @@
             font-size: 15px;
             font-weight: 600;
         }
-
         .step {
             padding: 8px 14px;
             border-radius: 999px;
             background: #e0e7ff;
             color: #1d3a8a;
         }
-
         .step.active {
             background: #4f46e5;
             color: #fff;
         }
-
-        .step.done {
-            background: #16a34a;
-            color: #fff;
-        }
-
         .arrow {
             margin: 0 8px;
             color: #4f46e5;
             font-size: 18px;
         }
-
-        .card {
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 14px;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-            max-width: 800px;
-            margin-bottom: 30px;
-        }
-
-        label {
-            font-weight: 600;
-            display: block;
-            margin-top: 14px;
-            margin-bottom: 4px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-
-        input:focus, select:focus {
-            outline: 2px solid #4f46e5;
-            border-color: #4f46e5;
-        }
-
-        button {
-            background: #4f46e5;
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 999px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 18px;
-        }
-
-        button:hover {
-            background: #4338ca;
-        }
-
-        .btn-secondary {
-            background: #e5e7eb;
-            color: #111827;
-        }
-
-        .btn-secondary:hover {
-            background: #d1d5db;
-        }
-
-        .buttons-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 18px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        th {
-            background: #111827;
-            color: white;
-            padding: 10px;
-            font-size: 13px;
-        }
-
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-
-        tr:nth-child(even) {
-            background: #f9fafb;
-        }
-
-        tr:hover {
-            background: #e5f0ff;
-        }
-
+        .step-panel { display:none; }
+        .step-panel.active { display:block; }
+        .hint { font-size:12px; color:#6b7280; margin-top:4px; }
+        .error { color:#b91c1c; font-size:12px; margin-top:6px; }
         .pdf-buttons button {
             margin-right: 6px;
             margin-top: 0;
             padding: 6px 10px;
             font-size: 12px;
         }
-
-        .footer {
-            margin-top: 40px;
-            color: #6b7280;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .step-panel {
-            display: none;
-        }
-
-        .step-panel.active {
-            display: block;
-        }
-
-        .hint {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-
-        .error {
-            color: #b91c1c;
-            font-size: 12px;
-            margin-top: 6px;
-        }
     </style>
 </head>
 <body>
-    <div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
 
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
-</div>
-
+<div id="common-header"></div>
+<script>
+fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
+</script>
 
 <h2>契約管理</h2>
 
-<!-- ステップバー -->
 <div class="step-bar">
-    <div class="step active" id="stepLabel1">1. 契約情報</div>
+    <div class="step active" id="stepLabel1">1. 契約書番号</div>
     <div class="arrow">→</div>
-    <div class="step" id="stepLabel2">2. PDFアップロード</div>
+    <div class="step" id="stepLabel2">2. 契約情報</div>
     <div class="arrow">→</div>
-    <div class="step" id="stepLabel3">3. 内容確認</div>
+    <div class="step" id="stepLabel3">3. PDFアップロード</div>
     <div class="arrow">→</div>
-    <div class="step" id="stepLabel4">4. 締結</div>
-    <div class="arrow">→</div>
-    <div class="step" id="stepLabel5">5. 完了</div>
+    <div class="step" id="stepLabel4">4. 確認・登録</div>
 </div>
 
-<!-- ステップ1：契約情報 -->
 <div class="card step-panel active" id="step1">
-    <h3>① 契約情報の入力</h3>
+    <h3>① 契約書番号の入力 / バーコード読み取り</h3>
+    <label>契約書番号</label>
+    <input id="contractNumber" placeholder="契約書のバーコード下に印字されている番号">
+    <div class="hint">新規契約の場合、契約書のバーコードを読み取るか、この番号を入力します。</div>
+    <button onclick="startContractBarcode()">契約書バーコードを読み取る</button>
+    <button onclick="goToStep(2)">次へ</button>
+    <div id="errorStep1" class="error"></div>
+</div>
 
-    <label>顧客コード</label>
-    <select id="customerCode"></select>
-    <div class="hint">顧客管理画面で自動発行された顧客コードです。</div>
+<div class="card step-panel" id="step2">
+    <h3>② 契約情報</h3>
+
+    <div id="customerSelectArea">
+        <label>顧客コード</label>
+        <select id="customerCode"></select>
+        <div class="hint">社員ログイン時のみ選択。顧客ログイン時は自動で自分の顧客コードになります。</div>
+    </div>
 
     <label>契約開始日</label>
     <input type="date" id="startDate">
@@ -216,75 +84,39 @@
     <input type="date" id="endDate">
 
     <label>プラン名</label>
-    <input id="planName" placeholder="例：クラウド契約スタンダード">
+    <input id="planName">
 
     <label>月額料金</label>
-    <input id="price" type="number" placeholder="例：9800">
+    <input id="price" type="number">
 
-    <div class="buttons-row">
-        <button onclick="goToStep(2)">次へ（PDFアップロードへ）</button>
-    </div>
-    <div id="errorStep1" class="error"></div>
-</div>
-
-<!-- ステップ2：PDFアップロード -->
-<div class="card step-panel" id="step2">
-    <h3>② 契約書PDFのアップロード</h3>
-
-    <label>契約書PDFファイル</label>
-    <input type="file" id="pdfFile" accept="application/pdf">
-    <div class="hint">締結済・未締結どちらでも登録できます。</div>
-
-    <div class="buttons-row">
-        <button class="btn-secondary" onclick="goToStep(1)">戻る</button>
-        <button onclick="goToStep(3)">次へ（内容確認へ）</button>
-    </div>
+    <button class="btn-secondary" onclick="goToStep(1)">戻る</button>
+    <button onclick="goToStep(3)">次へ</button>
     <div id="errorStep2" class="error"></div>
 </div>
 
-<!-- ステップ3：内容確認 -->
 <div class="card step-panel" id="step3">
-    <h3>③ 内容確認</h3>
-
-    <div id="confirmArea"></div>
-
-    <div class="buttons-row">
-        <button class="btn-secondary" onclick="goToStep(2)">戻る</button>
-        <button onclick="goToStep(4)">次へ（締結へ）</button>
-    </div>
+    <h3>③ 契約書PDFアップロード</h3>
+    <label>契約書PDF</label>
+    <input type="file" id="pdfFile" accept="application/pdf">
+    <div class="hint">紙の契約書をスキャンしたPDFなどを登録します。</div>
+    <button class="btn-secondary" onclick="goToStep(2)">戻る</button>
+    <button onclick="goToStep(4)">次へ</button>
+    <div id="errorStep3" class="error"></div>
 </div>
 
-<!-- ステップ4：締結 -->
 <div class="card step-panel" id="step4">
-    <h3>④ 締結</h3>
-
-    <p>内容に問題がなければ、「契約を登録」ボタンを押してください。</p>
-
-    <div class="buttons-row">
-        <button class="btn-secondary" onclick="goToStep(3)">戻る</button>
-        <button onclick="registerContract()">契約を登録</button>
-    </div>
+    <h3>④ 確認・登録</h3>
+    <div id="confirmArea"></div>
+    <button class="btn-secondary" onclick="goToStep(3)">戻る</button>
+    <button onclick="registerContract()">契約を登録</button>
     <div id="errorStep4" class="error"></div>
 </div>
 
-<!-- ステップ5：完了 -->
-<div class="card step-panel" id="step5">
-    <h3>⑤ 完了</h3>
-
-    <p>契約が登録されました。</p>
-    <p>契約一覧からPDFの閲覧・印刷ができます。</p>
-
-    <div class="buttons-row">
-        <button onclick="goToStep(1)">新しい契約を登録する</button>
-    </div>
-</div>
-
-<!-- 契約一覧 -->
 <div class="card">
-    <h3>契約一覧</h3>
+    <h3>契約一覧（社員用）</h3>
     <table id="contractsTable">
         <tr>
-            <th>契約ID</th>
+            <th>契約書番号</th>
             <th>顧客コード</th>
             <th>プラン名</th>
             <th>PDF</th>
@@ -292,259 +124,216 @@
     </table>
 </div>
 
-<div class="footer">
-    © JOSHIN SYSTEMS
-</div>
+<div class="footer">© JOSHIN SYSTEMS</div>
 
+<script src="common.js"></script>
 <script>
-// ===============================
 // ステップ制御
-// ===============================
 let currentStep = 1;
-
 function updateStepLabels() {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 4; i++) {
         const label = document.getElementById("stepLabel" + i);
-        label.classList.remove("active", "done");
-        if (i < currentStep) {
-            label.classList.add("done");
-        } else if (i === currentStep) {
-            label.classList.add("active");
-        }
+        label.classList.remove("active");
+        if (i === currentStep) label.classList.add("active");
     }
 }
-
 function goToStep(step) {
-    // バリデーション
     if (step === 2 && !validateStep1()) return;
     if (step === 3 && !validateStep2()) return;
+    if (step === 4 && !validateStep3()) return;
 
     currentStep = step;
     updateStepLabels();
-
-    for (let i = 1; i <= 5; i++) {
-        const panel = document.getElementById("step" + i);
-        panel.classList.remove("active");
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById("step" + i).classList.remove("active");
     }
     document.getElementById("step" + step).classList.add("active");
-
-    if (step === 3) {
-        fillConfirm();
-    }
+    if (step === 4) fillConfirm();
 }
 
-// ===============================
 // バリデーション
-// ===============================
 function validateStep1() {
-    const customerCode = document.getElementById("customerCode").value;
-    const startDate = document.getElementById("startDate").value;
-    const planName = document.getElementById("planName").value.trim();
-
+    const num = document.getElementById("contractNumber").value.trim();
     let msg = "";
-    if (!customerCode) msg += "顧客コードを選択してください。\n";
-    if (!startDate) msg += "契約開始日を入力してください。\n";
-    if (!planName) msg += "プラン名を入力してください。\n";
-
-    document.getElementById("errorStep1").textContent = msg.replace(/\n/g, " ");
-    return msg === "";
+    if (!num) msg = "契約書番号を入力してください。";
+    document.getElementById("errorStep1").textContent = msg;
+    return !msg;
 }
-
 function validateStep2() {
-    const pdfFile = document.getElementById("pdfFile").files[0];
+    const start = document.getElementById("startDate").value;
+    const plan = document.getElementById("planName").value.trim();
     let msg = "";
-    if (!pdfFile) msg += "契約書PDFファイルを選択してください。";
-
+    if (!start) msg += "契約開始日を入力してください。";
+    if (!plan) msg += (msg ? " " : "") + "プラン名を入力してください。";
     document.getElementById("errorStep2").textContent = msg;
-    return msg === "";
+    return !msg;
+}
+function validateStep3() {
+    const pdf = document.getElementById("pdfFile").files[0];
+    let msg = "";
+    if (!pdf) msg = "契約書PDFを選択してください。";
+    document.getElementById("errorStep3").textContent = msg;
+    return !msg;
 }
 
-// ===============================
-// 確認画面
-// ===============================
+// 確認
 function fillConfirm() {
-    const customerCode = document.getElementById("customerCode").value;
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    const planName = document.getElementById("planName").value.trim();
+    const num = document.getElementById("contractNumber").value.trim();
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    const plan = document.getElementById("planName").value.trim();
     const price = document.getElementById("price").value;
+    const customerCode = (loginUser.type === "customer")
+        ? loginUser.code
+        : document.getElementById("customerCode").value;
 
-    const confirmArea = document.getElementById("confirmArea");
-    confirmArea.innerHTML = `
+    document.getElementById("confirmArea").innerHTML = `
+        <p><strong>契約書番号：</strong> ${num}</p>
         <p><strong>顧客コード：</strong> ${customerCode}</p>
-        <p><strong>契約開始日：</strong> ${startDate}</p>
-        <p><strong>契約終了日：</strong> ${endDate || "（未設定）"}</p>
-        <p><strong>プラン名：</strong> ${planName}</p>
+        <p><strong>契約開始日：</strong> ${start}</p>
+        <p><strong>契約終了日：</strong> ${end || "（未設定）"}</p>
+        <p><strong>プラン名：</strong> ${plan}</p>
         <p><strong>月額料金：</strong> ${price ? price + " 円" : "（未設定）"}</p>
     `;
 }
 
-// ===============================
-// IndexedDB 初期化
-// ===============================
-let db;
-const request = indexedDB.open("contractsDB", 1);
-
-request.onupgradeneeded = function(event) {
-    db = event.target.result;
-    db.createObjectStore("contracts", { keyPath: "contractID" });
-};
-
-request.onsuccess = function(event) {
-    db = event.target.result;
-    loadContracts();
-};
-
-request.onerror = function() {
-    alert("IndexedDB の初期化に失敗しました。");
-};
-
-// ===============================
-// 顧客データ読み込み
-// ===============================
+// 顧客選択（社員のみ）
 const customers = JSON.parse(localStorage.getItem("customers") || "[]");
-
 function loadCustomers() {
-    const select = document.getElementById("customerCode");
-    select.innerHTML = "";
+    if (loginUser.type === "customer") {
+        document.getElementById("customerSelectArea").style.display = "none";
+        return;
+    }
+    const sel = document.getElementById("customerCode");
     customers.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c.customerCode;
         opt.textContent = `${c.customerCode} ${c.customerName}`;
-        select.appendChild(opt);
+        sel.appendChild(opt);
     });
 }
 
-// ===============================
-// 契約ID生成（顧客コード + ランダム6桁）
-// ===============================
-function generateContractID(customerCode) {
-    const random6 = String(Math.floor(Math.random() * 999999)).padStart(6, "0");
-    return `${customerCode}_${random6}`;
-}
+// IndexedDB
+let db;
+const req = indexedDB.open("contractsDB", 1);
+req.onupgradeneeded = e => {
+    db = e.target.result;
+    db.createObjectStore("contracts", { keyPath: "contractNumber" });
+};
+req.onsuccess = e => {
+    db = e.target.result;
+    loadContracts();
+};
+req.onerror = () => alert("契約DB初期化に失敗しました。");
 
-// ===============================
 // 契約登録
-// ===============================
 function registerContract() {
-    const customerCode = document.getElementById("customerCode").value;
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    const planName = document.getElementById("planName").value.trim();
+    const num = document.getElementById("contractNumber").value.trim();
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    const plan = document.getElementById("planName").value.trim();
     const price = document.getElementById("price").value;
     const pdfFile = document.getElementById("pdfFile").files[0];
+    const customerCode = (loginUser.type === "customer")
+        ? loginUser.code
+        : document.getElementById("customerCode").value;
 
-    if (!customerCode || !startDate || !planName || !pdfFile) {
+    if (!num || !start || !plan || !pdfFile) {
         document.getElementById("errorStep4").textContent = "必要項目が不足しています。";
         return;
     }
 
-    const contractID = generateContractID(customerCode);
-
     const reader = new FileReader();
     reader.onload = function() {
         const pdfData = reader.result;
-
         const tx = db.transaction("contracts", "readwrite");
         const store = tx.objectStore("contracts");
-
         store.put({
-            contractID,
+            contractNumber: num,
             customerCode,
-            startDate,
-            endDate,
-            planName,
+            startDate: start,
+            endDate: end,
+            planName: plan,
             price,
             pdfData
         });
-
         tx.oncomplete = function() {
-            loadContracts();
             document.getElementById("errorStep4").textContent = "";
-            goToStep(5);
+            alert("契約を登録しました。");
+            loadContracts();
         };
     };
-
     reader.readAsArrayBuffer(pdfFile);
 }
 
-// ===============================
-// 契約一覧表示
-// ===============================
+// 契約一覧（社員用）
 function loadContracts() {
     const table = document.getElementById("contractsTable");
     table.innerHTML = `
         <tr>
-            <th>契約ID</th>
+            <th>契約書番号</th>
             <th>顧客コード</th>
             <th>プラン名</th>
             <th>PDF</th>
         </tr>
     `;
-
-    if (!db) return;
-
+    if (!db || loginUser.type !== "employee") return;
     const tx = db.transaction("contracts", "readonly");
     const store = tx.objectStore("contracts");
-
-    store.openCursor().onsuccess = function(event) {
-        const cursor = event.target.result;
+    store.openCursor().onsuccess = e => {
+        const cursor = e.target.result;
         if (cursor) {
             const c = cursor.value;
-
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${c.contractID}</td>
+                <td>${c.contractNumber}</td>
                 <td>${c.customerCode}</td>
                 <td>${c.planName}</td>
                 <td class="pdf-buttons">
-                    <button onclick="viewPDF('${c.contractID}')">閲覧</button>
-                    <button onclick="printPDF('${c.contractID}')">印刷</button>
+                    <button onclick="viewPDF('${c.contractNumber}')">閲覧</button>
+                    <button onclick="printPDF('${c.contractNumber}')">印刷</button>
                 </td>
             `;
             table.appendChild(row);
-
             cursor.continue();
         }
     };
 }
 
-// ===============================
-// PDF 閲覧
-// ===============================
-function viewPDF(contractID) {
+// PDF閲覧・印刷
+function viewPDF(num) {
     const tx = db.transaction("contracts", "readonly");
     const store = tx.objectStore("contracts");
-
-    const req = store.get(contractID);
-    req.onsuccess = function() {
-        const blob = new Blob([req.result.pdfData], { type: "application/pdf" });
+    const g = store.get(num);
+    g.onsuccess = function() {
+        if (!g.result) { alert("PDFがありません。"); return; }
+        const blob = new Blob([g.result.pdfData], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
     };
 }
-
-// ===============================
-// PDF 印刷
-// ===============================
-function printPDF(contractID) {
+function printPDF(num) {
     const tx = db.transaction("contracts", "readonly");
     const store = tx.objectStore("contracts");
-
-    const req = store.get(contractID);
-    req.onsuccess = function() {
-        const blob = new Blob([req.result.pdfData], { type: "application/pdf" });
+    const g = store.get(num);
+    g.onsuccess = function() {
+        if (!g.result) { alert("PDFがありません。"); return; }
+        const blob = new Blob([g.result.pdfData], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
-
         const win = window.open(url, "_blank");
         win.onload = () => win.print();
     };
+}
+
+// 契約書バーコード読み取り（ダミー）
+function startContractBarcode() {
+    alert("ここで契約書バーコードをカメラで読み取る処理を実装（QuaggaJS 等）。\n読み取った番号を contractNumber にセットするイメージ。");
+    // document.getElementById("contractNumber").value = "CN-20260320-0001";
 }
 
 // 初期処理
 loadCustomers();
 updateStepLabels();
 </script>
-
 </body>
 </html>
