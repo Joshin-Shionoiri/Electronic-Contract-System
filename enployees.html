@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>社員アカウント管理</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        input { padding: 8px; margin: 5px 0; width: 250px; }
+        button { padding: 8px 15px; margin-top: 10px; }
+        table { border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px 12px; }
+    </style>
+</head>
+<body>
+
+<h2>社員アカウント作成</h2>
+
+<input id="empId" placeholder="社員ID">
+<br>
+<input id="empPass" type="password" placeholder="パスワード">
+<br>
+<button onclick="addEmployee()">登録</button>
+
+<h3>社員一覧</h3>
+<table id="empTable">
+    <tr>
+        <th>社員ID</th>
+        <th>削除</th>
+    </tr>
+</table>
+
+<script>
+// ローカルストレージから読み込み
+let employees = JSON.parse(localStorage.getItem("employees") || "[]");
+
+function renderTable() {
+    const table = document.getElementById("empTable");
+    table.innerHTML = `
+        <tr>
+            <th>社員ID</th>
+            <th>削除</th>
+        </tr>
+    `;
+
+    employees.forEach((emp, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${emp.id}</td>
+            <td><button onclick="deleteEmployee(${index})">削除</button></td>
+        `;
+        table.appendChild(row);
+    });
+}
+
+function addEmployee() {
+    const id = document.getElementById("empId").value;
+    const pass = document.getElementById("empPass").value;
+
+    if (!id || !pass) {
+        alert("社員IDとパスワードを入力してください。");
+        return;
+    }
+
+    employees.push({ id, pass });
+    localStorage.setItem("employees", JSON.stringify(employees));
+
+    document.getElementById("empId").value = "";
+    document.getElementById("empPass").value = "";
+
+    renderTable();
+}
+
+function deleteEmployee(index) {
+    employees.splice(index, 1);
+    localStorage.setItem("employees", JSON.stringify(employees));
+    renderTable();
+}
+
+renderTable();
+</script>
+
+</body>
+</html>

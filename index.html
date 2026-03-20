@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>電子契約システム - ログイン</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; }
+        .box { width: 300px; margin: auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; }
+        button { width: 100%; padding: 10px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>電子契約システム</h2>
+
+    <input id="loginCode" placeholder="ログインコード">
+    <input id="password" type="password" placeholder="パスワード">
+
+    <div id="error" class="error"></div>
+
+    <button onclick="login()">ログイン</button>
+</div>
+
+<script>
+function login() {
+    const code = document.getElementById("loginCode").value;
+    const pass = document.getElementById("password").value;
+
+    if (code === "Joshin2012" && pass === "J.shio0106") {
+        window.location.href = "admin.html";
+    } else {
+        document.getElementById("error").innerText = "ログインコードまたはパスワードが違います。";
+    }
+}
+</script>
+
+</body>
+</html>
