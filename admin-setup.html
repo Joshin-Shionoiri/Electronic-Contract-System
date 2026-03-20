@@ -1,31 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者初期設定</title>
+    <link rel="stylesheet" href="common.css">
+
+    <style>
+        body {
+            padding: 20px;
+        }
+        .card {
+            max-width: 400px;
+            margin: auto;
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
 <body>
-<h3>初期管理者作成</h3>
 
-<label>ID</label>
-<input id="id">
+<h2>管理者アカウント作成</h2>
 
-<label>パスワード</label>
-<input id="pass">
+<div class="card">
+    <label>管理者ID</label>
+    <input id="adminId">
 
-<button onclick="createAdmin()">作成</button>
+    <label>パスワード</label>
+    <input id="adminPass" type="password">
+
+    <button onclick="createAdmin()">作成する</button>
+
+    <div id="msg" style="margin-top:10px; color:red;"></div>
+</div>
 
 <script>
+// ===============================
+// 管理者作成処理
+// ===============================
 function createAdmin() {
-    const id = document.getElementById("id").value;
-    const pass = document.getElementById("pass").value;
+    const id = document.getElementById("adminId").value.trim();
+    const pass = document.getElementById("adminPass").value.trim();
+    const msg = document.getElementById("msg");
 
-    const request = indexedDB.open("adminDB", 1);
+    msg.textContent = "";
 
-    request.onupgradeneeded = function(e) {
+    if (!id || !pass) {
+        msg.textContent = "管理者IDとパスワードを入力してください。";
+        return;
+    }
+
+    // --- 管理者DBに保存 ---
+    const adminReq = indexedDB.open("adminDB", 1);
+
+    adminReq.onupgradeneeded = function(e) {
         const db = e.target.result;
         if (!db.objectStoreNames.contains("admins")) {
             db.createObjectStore("admins", { keyPath: "adminId" });
         }
     };
 
-    request.onsuccess = function(e) {
+    adminReq.onsuccess = function(e) {
         const db = e.target.result;
         const tx = db.transaction("admins", "readwrite");
         const store = tx.objectStore("admins");
@@ -33,7 +68,41 @@ function createAdmin() {
         store.put({ adminId: id, password: pass });
 
         tx.oncomplete = function() {
-            alert("管理者を作成しました！");
+            // --- 社員DBにも登録（管理者を社員として扱う） ---
+            registerAdminAsEmployee(id, pass);
+        };
+    };
+}
+
+
+// ===============================
+// 管理者を社員DBにも登録
+// ===============================
+function registerAdminAsEmployee(id, pass) {
+    const empReq = indexedDB.open("employeeDB", 1);
+
+    empReq.onupgradeneeded = function(ev) {
+        const db2 = ev.target.result;
+        if (!db2.objectStoreNames.contains("employees")) {
+            db2.createObjectStore("employees", { keyPath: "employeeCode" });
+        }
+    };
+
+    empReq.onsuccess = function(ev) {
+        const db2 = ev.target.result;
+        const tx2 = db2.transaction("employees", "readwrite");
+        const store2 = tx2.objectStore("employees");
+
+        // 管理者を社員として登録
+        store2.put({
+            employeeCode: "EM-ADMIN",
+            name: "管理者",
+            password: pass,
+            role: "manager"   // ← 管理権限
+        });
+
+        tx2.oncomplete = function() {
+            alert("管理者アカウントを作成しました！（社員としてもログインできます）");
         };
     };
 }
