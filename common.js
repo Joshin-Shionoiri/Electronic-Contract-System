@@ -82,3 +82,29 @@ function initEmployeeDB() {
 }
 
 initEmployeeDB();
+
+// 初期社員データを登録（存在しない場合のみ）
+function seedEmployee() {
+    const req = indexedDB.open("employeesDB", 1);
+
+    req.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("employees", "readwrite");
+        const store = tx.objectStore("employees");
+
+        const getReq = store.get("EM-000001");
+
+        getReq.onsuccess = function() {
+            if (!getReq.result) {
+                store.put({
+                    employeeCode: "EM-000001",
+                    name: "社員 太郎",
+                    password: "password"
+                });
+            }
+        };
+    };
+}
+
+seedEmployee();
+
