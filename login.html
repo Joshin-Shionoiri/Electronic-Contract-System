@@ -4,163 +4,191 @@
     <meta charset="UTF-8">
     <title>ログイン</title>
     <link rel="stylesheet" href="common.css">
+
+    <!-- バーコード読み取り用 QuaggaJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
     <style>
-        .tab {
-            display: flex;
-            margin-bottom: 20px;
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
         }
-        .tab button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: #e2e8f0;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .tab button.active {
-            background: #4f46e5;
-            color: white;
-        }
-        .panel { display: none; }
-        .panel.active { display: block; }
     </style>
 </head>
 <body>
 
 <h2>ログイン</h2>
 
-<div class="tab">
-    <button id="tabCustomer" class="active" onclick="switchTab('customer')">顧客ログイン</button>
-    <button id="tabEmployee" onclick="switchTab('employee')">社員ログイン</button>
-</div>
+<div class="card">
+    <div class="section-title">① 顧客 / 社員ログイン</div>
 
-<!-- 顧客ログイン -->
-<div id="panelCustomer" class="panel active card">
-    <h3>顧客ログイン</h3>
-
-    <label>顧客コード</label>
-    <input id="customerCode">
-
-    <label>生年月日</label>
-    <input type="date" id="customerBirth">
-
-    <button onclick="loginCustomer()">ログイン</button>
-    <div id="errorCustomer" class="error"></div>
-</div>
-
-<!-- 社員ログイン -->
-<div id="panelEmployee" class="panel card">
-    <h3>社員ログイン</h3>
-
-    <label>社員コード</label>
-    <input id="employeeCode">
+    <label>ログインID（CU-000123 / EM-0001）</label>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <input id="loginCode" style="flex:1;">
+        <button onclick="scanBarcode()">バーコードを読み取る</button>
+    </div>
 
     <label>パスワード</label>
-    <input type="password" id="employeePass">
+    <input id="loginPass" type="password">
 
-    <button onclick="loginEmployee()">ログイン</button>
-    <div id="errorEmployee" class="error"></div>
+    <button onclick="login()">ログイン</button>
+    <div id="errorArea" class="error"></div>
 </div>
 
-<script src="common.js"></script>
+<div class="card">
+    <div class="section-title">② 管理者ログイン</div>
+    <button onclick="location.href='admin-login.html'">管理者ログインへ</button>
+</div>
+
+<!-- バーコード読み取りモーダル -->
+<div id="scannerModal" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+    <div style="background:white; padding:20px; text-align:center;">
+        <h3>バーコードを読み取っています…</h3>
+        <div id="scanner" style="width:300px; height:200px;"></div>
+        <button onclick="stopScanner()">閉じる</button>
+    </div>
+</div>
+
 <script>
 // ===============================
-// タブ切り替え
+// バーコード読み取り（顧客・社員共通）
 // ===============================
-function switchTab(type) {
-    document.getElementById("tabCustomer").classList.remove("active");
-    document.getElementById("tabEmployee").classList.remove("active");
-    document.getElementById("panelCustomer").classList.remove("active");
-    document.getElementById("panelEmployee").classList.remove("active");
+function scanBarcode() {
+    document.getElementById("scannerModal").style.display = "flex";
 
-    if (type === "customer") {
-        document.getElementById("tabCustomer").classList.add("active");
-        document.getElementById("panelCustomer").classList.add("active");
-    } else {
-        document.getElementById("tabEmployee").classList.add("active");
-        document.getElementById("panelEmployee").classList.add("active");
-    }
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            target: document.querySelector('#scanner'),
+            constraints: { facingMode: "environment" }
+        },
+        decoder: { readers: ["code_128_reader"] }
+    }, function(err) {
+        if (err) {
+            alert("カメラを起動できませんでした：" + err);
+            return;
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+
+        stopScanner();
+
+        // ★ 読み取ったコードを自動入力
+        document.getElementById("loginCode").value = code;
+    });
 }
+
+function stopScanner() {
+    Quagga.stop();
+    document.getElementById("scannerModal").style.display = "none";
+}
+
+
+// ===============================
+// ログイン処理（顧客 / 社員）
+// ===============================
+function login() {
+    const code = document.getElementById("loginCode").value.trim();
+    const pass = document.getElementById("loginPass").value.trim();
+    const error = document.getElementById("errorArea");
+    error.textContent = "";
+
+    if (!code) {
+        error.textContent = "ログインIDを入力してください。";
+        return;
+    }
+
+    // 顧客ログイン
+    if (code.startsWith("CU-")) {
+        loginCustomer(code, pass);
+        return;
+    }
+
+    // 社員ログイン
+    if (code.startsWith("EM-")) {
+        loginEmployee(code, pass);
+        return;
+    }
+
+    error.textContent = "ログインIDの形式が正しくありません。";
+}
+
 
 // ===============================
 // 顧客ログイン
 // ===============================
-function loginCustomer() {
-    const code = document.getElementById("customerCode").value.trim();
-    const birth = document.getElementById("customerBirth").value;
-    const error = document.getElementById("errorCustomer");
-
-    error.textContent = "";
-
+function loginCustomer(code, pass) {
     const request = indexedDB.open("customersDB", 1);
 
-    request.onsuccess = function(event) {
-        const db = event.target.result;
+    request.onsuccess = function(e) {
+        const db = e.target.result;
         const tx = db.transaction("customers", "readonly");
         const store = tx.objectStore("customers");
 
         const getReq = store.get(code);
-
         getReq.onsuccess = function() {
-            const user = getReq.result;
+            const customer = getReq.result;
 
-            if (!user || user.birth !== birth) {
-                error.textContent = "顧客コードまたは生年月日が正しくありません。";
+            if (!customer) {
+                document.getElementById("errorArea").textContent = "顧客が見つかりません。";
                 return;
             }
 
-            // ログイン情報を保存
-            loginUser = {
-                type: "customer",
-                code: user.customerCode,
-                name: user.name
-            };
-            sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
+            // パスワードチェック（必要なら）
+            if (customer.password && customer.password !== pass) {
+                document.getElementById("errorArea").textContent = "パスワードが違います。";
+                return;
+            }
 
-            location.href = "mypage.html";
+            sessionStorage.setItem("customerUser", JSON.stringify(customer));
+            location.href = "customer-mypage.html";
         };
     };
 }
 
+
 // ===============================
-// 社員ログイン（DB版）
+// 社員ログイン
 // ===============================
-function loginEmployee() {
-    const code = document.getElementById("employeeCode").value.trim();
-    const pass = document.getElementById("employeePass").value.trim();
-    const error = document.getElementById("errorEmployee");
+function loginEmployee(code, pass) {
+    const request = indexedDB.open("employeeDB", 1);
 
-    error.textContent = "";
-
-    const request = indexedDB.open("employeesDB", 1);
-
-    request.onsuccess = function(event) {
-        const db = event.target.result;
+    request.onsuccess = function(e) {
+        const db = e.target.result;
         const tx = db.transaction("employees", "readonly");
         const store = tx.objectStore("employees");
 
         const getReq = store.get(code);
-
         getReq.onsuccess = function() {
             const emp = getReq.result;
 
-            if (!emp || emp.password !== pass) {
-                error.textContent = "社員コードまたはパスワードが正しくありません。";
+            if (!emp) {
+                document.getElementById("errorArea").textContent = "社員が見つかりません。";
                 return;
             }
 
-            loginUser = {
-                type: "employee",
-                code: emp.employeeCode,
-                name: emp.name
-            };
-            sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
+            if (emp.password !== pass) {
+                document.getElementById("errorArea").textContent = "パスワードが違います。";
+                return;
+            }
 
+            sessionStorage.setItem("employeeUser", JSON.stringify(emp));
             location.href = "employees.html";
         };
     };
 }
-
 </script>
 
 </body>
