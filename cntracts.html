@@ -2,151 +2,277 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>契約状況管理</title>
+    <title>契約管理</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        button { padding: 6px 12px; }
-        iframe { width: 100%; height: 500px; margin-top: 20px; }
-        #signCanvas { border: 1px solid #000; }
+        body {
+            font-family: sans-serif;
+            background: #f0f6ff;
+            padding: 30px;
+        }
+
+        h2 {
+            color: #0078D4;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 700px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #005a9e;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        button {
+            background: #0078D4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 25px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .pdf-buttons button {
+            width: auto;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
 
-<h2>契約状況管理</h2>
+<h2>契約管理</h2>
 
+<div class="card">
+    <label>顧客コード：</label>
+    <select id="customerCode"></select>
+
+    <label>契約開始日：</label>
+    <input type="date" id="startDate">
+
+    <label>契約終了日：</label>
+    <input type="date" id="endDate">
+
+    <label>プラン名：</label>
+    <input id="planName">
+
+    <label>月額料金：</label>
+    <input id="price" type="number">
+
+    <label>契約書PDF：</label>
+    <input type="file" id="pdfFile" accept="application/pdf">
+
+    <button onclick="registerContract()">契約登録</button>
+</div>
+
+<h3>契約一覧</h3>
 <table id="contractsTable">
     <tr>
-        <th>顧客名</th>
+        <th>契約ID</th>
         <th>顧客コード</th>
-        <th>契約No.</th>
-        <th>ステータス</th>
-        <th>表示</th>
-        <th>締結</th>
+        <th>プラン名</th>
+        <th>PDF</th>
     </tr>
 </table>
 
-<h3>契約書プレビュー</h3>
-<iframe id="pdfViewer"></iframe>
-
-<div id="signArea" style="display:none;">
-    <h3>手書き署名</h3>
-    <canvas id="signCanvas" width="400" height="200"></canvas>
-    <br>
-    <button onclick="clearCanvas()">クリア</button>
-    <button onclick="saveSignature()">署名して締結</button>
+<div class="footer">
+    © JOSHIN SYSTEMS
 </div>
 
 <script>
-// ------------------------------
-// データ読み込み
-// ------------------------------
-let contracts = JSON.parse(localStorage.getItem("contracts") || "[]");
+// ===============================
+// IndexedDB 初期化
+// ===============================
+let db;
+const request = indexedDB.open("contractsDB", 1);
 
-// ------------------------------
-// 契約一覧表示
-// ------------------------------
-function renderTable() {
-    const table = document.getElementById("contractsTable");
+request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    const store = db.createObjectStore("contracts", { keyPath: "contractID" });
+};
 
-    table.innerHTML = `
-        <tr>
-            <th>顧客名</th>
-            <th>顧客コード</th>
-            <th>契約No.</th>
-            <th>ステータス</th>
-            <th>表示</th>
-            <th>締結</th>
-        </tr>
-    `;
+request.onsuccess = function(event) {
+    db = event.target.result;
+    loadContracts();
+};
 
-    contracts.forEach((c, index) => {
-        const row = document.createElement("tr");
+request.onerror = function() {
+    alert("IndexedDB の初期化に失敗しました。");
+};
 
-        row.innerHTML = `
-            <td>${c.customerName}</td>
-            <td>${c.customerCode}</td>
-            <td>${c.contractNo}</td>
-            <td>${c.status}</td>
-            <td><button onclick="showPDF(${index})">表示</button></td>
-            <td><button onclick="startSign(${index})">締結</button></td>
-        `;
+// ===============================
+// 顧客データ読み込み
+// ===============================
+const customers = JSON.parse(localStorage.getItem("customers") || "[]");
 
-        table.appendChild(row);
+function loadCustomers() {
+    const select = document.getElementById("customerCode");
+    customers.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.customerCode;
+        opt.textContent = `${c.customerCode} ${c.customerName}`;
+        select.appendChild(opt);
     });
 }
 
-// ------------------------------
-// PDF 表示
-// ------------------------------
-function showPDF(index) {
-    const pdf = contracts[index].pdfData;
-    document.getElementById("pdfViewer").src = pdf;
+// ===============================
+// 契約ID生成（顧客コード + ランダム6桁）
+// ===============================
+function generateContractID(customerCode) {
+    const random6 = String(Math.floor(Math.random() * 999999)).padStart(6, "0");
+    return `${customerCode}_${random6}`;
 }
 
-// ------------------------------
-// 締結処理開始
-// ------------------------------
-let signingIndex = null;
+// ===============================
+// 契約登録
+// ===============================
+function registerContract() {
+    const customerCode = document.getElementById("customerCode").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const planName = document.getElementById("planName").value.trim();
+    const price = document.getElementById("price").value;
+    const pdfFile = document.getElementById("pdfFile").files[0];
 
-function startSign(index) {
-    signingIndex = index;
+    if (!customerCode || !startDate || !planName || !pdfFile) {
+        alert("必要項目が入力されていません。");
+        return;
+    }
 
-    // 手書き署名エリアを表示
-    document.getElementById("signArea").style.display = "block";
+    const contractID = generateContractID(customerCode);
 
-    clearCanvas();
+    const reader = new FileReader();
+    reader.onload = function() {
+        const pdfData = reader.result;
+
+        const tx = db.transaction("contracts", "readwrite");
+        const store = tx.objectStore("contracts");
+
+        store.put({
+            contractID,
+            customerCode,
+            startDate,
+            endDate,
+            planName,
+            price,
+            pdfData
+        });
+
+        tx.oncomplete = function() {
+            loadContracts();
+            alert("契約を登録しました。");
+        };
+    };
+
+    reader.readAsArrayBuffer(pdfFile);
 }
 
-// ------------------------------
-// Canvas 手書き署名
-// ------------------------------
-const canvas = document.getElementById("signCanvas");
-const ctx = canvas.getContext("2d");
-let drawing = false;
+// ===============================
+// 契約一覧表示
+// ===============================
+function loadContracts() {
+    const table = document.getElementById("contractsTable");
+    table.innerHTML = `
+        <tr>
+            <th>契約ID</th>
+            <th>顧客コード</th>
+            <th>プラン名</th>
+            <th>PDF</th>
+        </tr>
+    `;
 
-canvas.addEventListener("mousedown", () => drawing = true);
-canvas.addEventListener("mouseup", () => drawing = false);
-canvas.addEventListener("mousemove", draw);
+    const tx = db.transaction("contracts", "readonly");
+    const store = tx.objectStore("contracts");
 
-function draw(e) {
-    if (!drawing) return;
+    store.openCursor().onsuccess = function(event) {
+        const cursor = event.target.result;
+        if (cursor) {
+            const c = cursor.value;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${c.contractID}</td>
+                <td>${c.customerCode}</td>
+                <td>${c.planName}</td>
+                <td class="pdf-buttons">
+                    <button onclick="viewPDF('${c.contractID}')">閲覧</button>
+                    <button onclick="printPDF('${c.contractID}')">印刷</button>
+                </td>
+            `;
+            table.appendChild(row);
 
-    ctx.fillStyle = "black";
-    ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
-    ctx.fill();
+            cursor.continue();
+        }
+    };
 }
 
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ===============================
+// PDF 閲覧
+// ===============================
+function viewPDF(contractID) {
+    const tx = db.transaction("contracts", "readonly");
+    const store = tx.objectStore("contracts");
+
+    const req = store.get(contractID);
+    req.onsuccess = function() {
+        const blob = new Blob([req.result.pdfData], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+    };
 }
 
-// ------------------------------
-// 署名保存 → 締結
-// ------------------------------
-function saveSignature() {
-    const signature = canvas.toDataURL("image/png");
+// ===============================
+// PDF 印刷
+// ===============================
+function printPDF(contractID) {
+    const tx = db.transaction("contracts", "readonly");
+    const store = tx.objectStore("contracts");
 
-    contracts[signingIndex].status = "締結済";
-    contracts[signingIndex].signedAt = new Date().toISOString();
-    contracts[signingIndex].signature = signature;
+    const req = store.get(contractID);
+    req.onsuccess = function() {
+        const blob = new Blob([req.result.pdfData], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
 
-    localStorage.setItem("contracts", JSON.stringify(contracts));
-
-    alert("契約を締結しました。");
-
-    document.getElementById("signArea").style.display = "none";
-
-    renderTable();
+        const win = window.open(url, "_blank");
+        win.onload = () => win.print();
+    };
 }
 
-renderTable();
+loadCustomers();
 </script>
 
 </body>
