@@ -5,105 +5,149 @@
     <title>ログイン</title>
     <link rel="stylesheet" href="common.css">
     <style>
-        .login-wrap {
-            height: 100vh;
+        .tab {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            margin-bottom: 20px;
         }
-        .login-card {
-            background: white;
-            width: 380px;
-            padding: 32px;
-            border-radius: 18px;
-            box-shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
-            text-align: center;
+        .tab button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: #e2e8f0;
+            cursor: pointer;
+            font-weight: bold;
         }
-        .error {
-            color: #b91c1c;
-            margin-top: 10px;
-            font-size: 13px;
+        .tab button.active {
+            background: #4f46e5;
+            color: white;
         }
+        .panel { display: none; }
+        .panel.active { display: block; }
     </style>
 </head>
 <body>
 
-<div class="login-wrap">
-    <div class="login-card">
-        <h2>ログイン</h2>
+<h2>ログイン</h2>
 
-        <label>ユーザー種別</label>
-        <select id="userType">
-            <option value="employee">社員（社員証バーコード可）</option>
-            <option value="customer">顧客（情報通知書）</option>
-        </select>
+<div class="tab">
+    <button id="tabCustomer" class="active" onclick="switchTab('customer')">顧客ログイン</button>
+    <button id="tabEmployee" onclick="switchTab('employee')">社員ログイン</button>
+</div>
 
-        <label>ユーザーID</label>
-        <input id="userID" placeholder="社員コード または 顧客コード">
+<!-- 顧客ログイン -->
+<div id="panelCustomer" class="panel active card">
+    <h3>顧客ログイン</h3>
 
-        <label>パスワード</label>
-        <input id="password" type="password" placeholder="パスワード">
+    <label>顧客コード（CU-000123）</label>
+    <input id="customerCode">
 
-        <button onclick="login()">ログイン</button>
-        <button onclick="startBarcodeLogin()">社員証バーコードでログイン</button>
+    <label>生年月日</label>
+    <input type="date" id="customerBirth">
 
-        <div id="error" class="error"></div>
+    <button onclick="loginCustomer()">ログイン</button>
+    <div id="errorCustomer" class="error"></div>
+</div>
 
-        <div class="footer">© JOSHIN SYSTEMS</div>
-    </div>
+<!-- 社員ログイン -->
+<div id="panelEmployee" class="panel card">
+    <h3>社員ログイン</h3>
+
+    <label>社員コード（EM-000123）</label>
+    <input id="employeeCode">
+
+    <label>パスワード</label>
+    <input type="password" id="employeePass">
+
+    <button onclick="loginEmployee()">ログイン</button>
+    <div id="errorEmployee" class="error"></div>
 </div>
 
 <script src="common.js"></script>
 <script>
-// 通常ログイン
-function login() {
-    const type = document.getElementById("userType").value;
-    const id = document.getElementById("userID").value.trim();
-    const pass = document.getElementById("password").value.trim();
-    const error = document.getElementById("error");
+// ===============================
+// タブ切り替え
+// ===============================
+function switchTab(type) {
+    document.getElementById("tabCustomer").classList.remove("active");
+    document.getElementById("tabEmployee").classList.remove("active");
+    document.getElementById("panelCustomer").classList.remove("active");
+    document.getElementById("panelEmployee").classList.remove("active");
 
-    if (!id || !pass) {
-        error.textContent = "ID と パスワードを入力してください。";
+    if (type === "customer") {
+        document.getElementById("tabCustomer").classList.add("active");
+        document.getElementById("panelCustomer").classList.add("active");
+    } else {
+        document.getElementById("tabEmployee").classList.add("active");
+        document.getElementById("panelEmployee").classList.add("active");
+    }
+}
+
+// ===============================
+// 顧客ログイン
+// ===============================
+function loginCustomer() {
+    const code = document.getElementById("customerCode").value.trim();
+    const birth = document.getElementById("customerBirth").value;
+    const error = document.getElementById("errorCustomer");
+
+    error.textContent = "";
+
+    const request = indexedDB.open("customersDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("customers", "readonly");
+        const store = tx.objectStore("customers");
+
+        const getReq = store.get(code);
+
+        getReq.onsuccess = function() {
+            const user = getReq.result;
+
+            if (!user || user.birth !== birth) {
+                error.textContent = "顧客コードまたは生年月日が正しくありません。";
+                return;
+            }
+
+            // ログイン情報を保存
+            loginUser = {
+                type: "customer",
+                code: user.customerCode,
+                name: user.name
+            };
+            sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
+
+            location.href = "mypage.html";
+        };
+    };
+}
+
+// ===============================
+// 社員ログイン（簡易版）
+// ===============================
+function loginEmployee() {
+    const code = document.getElementById("employeeCode").value.trim();
+    const pass = document.getElementById("employeePass").value.trim();
+    const error = document.getElementById("errorEmployee");
+
+    error.textContent = "";
+
+    // ★ 今は仮の固定ユーザー（後で employeesDB を作る）
+    if (code === "EM-000001" && pass === "password") {
+        loginUser = {
+            type: "employee",
+            code: code,
+            name: "社員 太郎"
+        };
+        sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
+
+        location.href = "employees.html";
         return;
     }
 
-    if (type === "employee") {
-        const employees = JSON.parse(localStorage.getItem("employees") || "[]");
-        const user = employees.find(e => e.employeeCode === id && e.password === pass);
-        if (user) {
-            localStorage.setItem("loginUser", JSON.stringify({
-                type: "employee",
-                code: user.employeeCode,
-                name: user.employeeName
-            }));
-            location.href = "index.html";
-            return;
-        }
-    }
-
-    if (type === "customer") {
-        const customers = JSON.parse(localStorage.getItem("customers") || "[]");
-        const user = customers.find(c => c.customerCode === id && c.password === pass);
-        if (user) {
-            localStorage.setItem("loginUser", JSON.stringify({
-                type: "customer",
-                code: user.customerCode,
-                name: user.customerName
-            }));
-            location.href = "index.html";
-            return;
-        }
-    }
-
-    error.textContent = "ID または パスワードが正しくありません。";
-}
-
-// 社員証バーコードログイン（ライブラリは別途）
-function startBarcodeLogin() {
-    alert("カメラを起動して社員証バーコードを読み取る処理をここに実装（QuaggaJS 等）");
-    // 読み取ったコードを仮に EMP-000123 とする
-    // loginWithBarcodeEmployee("EMP-000123");
+    error.textContent = "社員コードまたはパスワードが正しくありません。";
 }
 </script>
+
 </body>
 </html>
