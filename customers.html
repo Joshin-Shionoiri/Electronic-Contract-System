@@ -3,153 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <title>顧客管理</title>
+    <link rel="stylesheet" href="common.css">
     <style>
-        body {
-            font-family: sans-serif;
-            background: #f4f8ff;
-            padding: 20px;
-        }
-        h2 {
-            color: #0078D4;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
-        }
-        input, button {
-            padding: 10px;
-            margin-top: 10px;
-            width: 100%;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background: #0078D4;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #005fa3;
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1e293b;
         }
         table {
             width: 100%;
-            margin-top: 20px;
             border-collapse: collapse;
+            margin-top: 15px;
         }
         th, td {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             padding: 8px;
+        }
+        th {
+            background: #f1f5f9;
         }
     </style>
 </head>
 <body>
-   <div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
 
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
-</div>
- 
+<!-- 共通ヘッダー -->
+<div id="common-header"></div>
+<script>
+fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
+</script>
 
 <h2>顧客管理</h2>
 
+<!-- 顧客登録フォーム -->
 <div class="card">
-    <label>顧客名：</label>
+    <div class="section-title">① 顧客登録</div>
+
+    <label>顧客コード（CU-000123）</label>
+    <input id="customerCode">
+
+    <label>氏名</label>
     <input id="customerName">
 
-    <button onclick="registerCustomer()">登録</button>
+    <label>生年月日</label>
+    <input type="date" id="customerBirth">
+
+    <label>電話番号</label>
+    <input id="customerTel">
+
+    <label>メールアドレス</label>
+    <input id="customerMail">
+
+    <label>住所</label>
+    <input id="customerAddress">
+
+    <button onclick="registerCustomer()">登録する</button>
+    <div id="errorArea" class="error"></div>
 </div>
 
-<h3>顧客一覧</h3>
-<table id="customersTable">
-    <tr>
-        <th>顧客コード</th>
-        <th>顧客名</th>
-        <th>ログインパスワード</th>
-    </tr>
-</table>
+<!-- 顧客一覧 -->
+<div class="card">
+    <div class="section-title">② 顧客一覧</div>
+    <table id="customerTable">
+        <thead>
+            <tr>
+                <th>顧客コード</th>
+                <th>氏名</th>
+                <th>生年月日</th>
+                <th>電話番号</th>
+                <th>メール</th>
+                <th>住所</th>
+                <th>バーコード</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
 
+<script src="common.js"></script>
 <script>
-// 顧客データ
-let customers = JSON.parse(localStorage.getItem("customers") || "[]");
-
-// 顧客コード自動生成
-function generateCustomerCode() {
-    const letters = Array.from({length: 3}, () =>
-        String.fromCharCode(65 + Math.floor(Math.random() * 26))
-    ).join("");
-
-    const numbers = String(Math.floor(Math.random() * 99999) + 1).padStart(5, "0");
-
-    return `${letters}-${numbers}`;
-}
-
-// パスワード自動生成
-function generatePassword() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let pass = "";
-    for (let i = 0; i < 10; i++) {
-        pass += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return pass;
-}
-
-// 顧客登録
-function registerCustomer() {
-    const name = document.getElementById("customerName").value.trim();
-    if (!name) {
-        alert("顧客名を入力してください。");
-        return;
-    }
-
-    const code = generateCustomerCode();
-    const pass = generatePassword();
-
-    customers.push({
-        customerCode: code,
-        customerName: name,
-        password: pass
-    });
-
-    localStorage.setItem("customers", JSON.stringify(customers));
-
-    document.getElementById("customerName").value = "";
-
-    renderTable();
-}
-
-// 顧客一覧表示
-function renderTable() {
-    const table = document.getElementById("customersTable");
-
-    table.innerHTML = `
-        <tr>
-            <th>顧客コード</th>
-            <th>顧客名</th>
-            <th>ログインパスワード</th>
-        </tr>
-    `;
-
-    customers.forEach(c => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${c.customerCode}</td>
-            <td>${c.customerName}</td>
-            <td>${c.password}</td>
-        `;
-        table.appendChild(row);
-    });
-}
-
-renderTable();
+// ここにロジックを追加する
 </script>
 
 </body>
