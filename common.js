@@ -69,3 +69,16 @@ function initContractDB() {
 // 初期化実行
 initCustomerDB();
 initContractDB();
+
+// 社員DB
+function initEmployeeDB() {
+    const req = indexedDB.open("employeesDB", 1);
+    req.onupgradeneeded = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("employees")) {
+            db.createObjectStore("employees", { keyPath: "employeeCode" });
+        }
+    };
+}
+
+initEmployeeDB();
