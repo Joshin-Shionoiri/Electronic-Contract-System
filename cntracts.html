@@ -32,6 +32,7 @@
         .error { color:#b91c1c; font-size:12px; margin-top:6px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
@@ -102,14 +103,43 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
 <script src="common.js"></script>
 <script>
 // STEP 2：契約書番号のQR読み取り
+let qrScanner = null;
+
 function scanContractQR() {
-    alert("ここで契約書QRコードを読み取る処理を実装（QRライブラリなど）");
+    document.getElementById("qrModal").style.display = "flex";
 
-    // ★ デモ用：読み取った契約書番号を仮でセット
-    const scannedContractNumber = "CN-20260320-0001";
+    qrScanner = new Html5Qrcode("qrReader");
 
-    document.getElementById("contractNumber").value = scannedContractNumber;
+    qrScanner.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        qrCodeMessage => {
+            // 読み取った契約書番号
+            document.getElementById("contractNumber").value = qrCodeMessage;
+
+            stopQR();
+        },
+        errorMessage => {
+            // 読み取り中のエラーは無視してOK
+        }
+    ).catch(err => {
+        alert("カメラを起動できませんでした：" + err);
+        stopQR();
+    });
 }
+
+function stopQR() {
+    if (qrScanner) {
+        qrScanner.stop().catch(() => {});
+        qrScanner.clear();
+        qrScanner = null;
+    }
+    document.getElementById("qrModal").style.display = "none";
+}
+
 
 // STEP 2：次へ進む前のチェック
 function validateStep2() {
@@ -181,10 +211,36 @@ function updateStepLabels() {
 
 // STEP 1：本人確認バーコード読み取り
 function startCustomerBarcode() {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    document.getElementById("scannerModal").style.display = "flex";
 
-    // ★ デモ用：読み取った顧客コードを仮でセット
-    const scannedCode = "CU-000123";
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            target: document.querySelector('#scanner'),
+            constraints: { facingMode: "environment" }
+        },
+        decoder: {
+            readers: ["code_128_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            alert("カメラを起動できませんでした。");
+            return;
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        const scannedCode = result.codeResult.code;
+
+        Quagga.stop();
+        document.getElementById("scannerModal").style.display = "none";
+
+        handleCustomerBarcode(scannedCode);
+    });
+}
+
 
     // 顧客ログイン時は loginUser.code と一致しなければならない
     if (loginUser.type === "customer") {
@@ -328,5 +384,35 @@ function completeContract() {
         };
     };
 }
+<div id="scannerModal" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+    <div style="background:white; padding:20px; text-align:center;">
+        <h3>バーコードを読み取っています…</h3>
+        <div id="scanner" style="width:300px; height:200px;"></div>
+        <button onclick="stopScanner()">閉じる</button>
+    </div>
+</div>
 
 
+<div id="qrModal" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+    <div style="background:white; padding:20px; text-align:center;">
+        <h3>QRコードを読み取っています…</h3>
+        <div id="qrReader" style="width:300px;"></div>
+        <button onclick="stopQR()">閉じる</button>
+    </div>
+</div>
