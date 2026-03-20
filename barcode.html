@@ -1,13 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>バーコード作成</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f0f6ff;
+            padding: 30px;
+        }
+
+        h2 {
+            color: #0078D4;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #005a9e;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        button {
+            background: #0078D4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+
+        #barcode {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>バーコード作成</h2>
+
+<div class="card">
+    <label>顧客を選択：</label>
+    <select id="customerSelect"></select>
+
+    <button onclick="generateBarcode()">バーコード生成</button>
+
+    <div id="barcode"></div>
+</div>
+
+<div class="footer">
+    © JOSHIN SYSTEMS
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+<script>
+// 顧客データ読み込み
 const customers = JSON.parse(localStorage.getItem("customers") || "[]");
 
+// 顧客一覧をプルダウンに表示
 function loadCustomers() {
     const select = document.getElementById("customerSelect");
     select.innerHTML = "";
 
     customers.forEach(c => {
         const opt = document.createElement("option");
-        opt.value = c.customerCode;  // ← 新しいコード形式をそのまま使う
-        opt.textContent = `${c.customerCode} ${c.customerName}`;
+        opt.value = c.customerCode;  // ← 顧客コードをそのまま使う
+        opt.textContent = `${c.customerCode}　${c.customerName}`;
         select.appendChild(opt);
     });
 }
+
+// バーコード生成
+function generateBarcode() {
+    const code = document.getElementById("customerSelect").value;
+
+    document.getElementById("barcode").innerHTML = `
+        <svg id="barcodeSvg"></svg>
+    `;
+
+    JsBarcode("#barcodeSvg", code, {
+        format: "CODE128",
+        width: 2,
+        height: 70,
+        displayValue: true,
+        fontSize: 18
+    });
+}
+
+loadCustomers();
+</script>
+
+</body>
+</html>
