@@ -1,0 +1,138 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    background: #f4f6fb;
+    padding: 40px;
+    color: #333;
+    margin: 0;
+}
+
+h1, h2, h3 {
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #1e293b;
+}
+
+.card {
+    background: white;
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(15,23,42,0.12);
+    max-width: 900px;
+    margin-bottom: 30px;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-top: 16px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+input:focus, select:focus {
+    outline: 2px solid #6366f1;
+    border-color: #6366f1;
+}
+
+button {
+    padding: 12px 20px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+button:hover {
+    background: #4f46e5;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+th {
+    background: #111827;
+    color: white;
+    padding: 10px;
+    font-size: 13px;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+}
+
+tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.topbar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.user-menu {
+    background: #ffffff;
+    padding: 10px 16px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.user-dropdown {
+    position: absolute;
+    right: 40px;
+    top: 60px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    display: none;
+    overflow: hidden;
+}
+
+.user-dropdown div {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.user-dropdown div:hover {
+    background: #f1f5f9;
+}
+
+.footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 12px;
+    color: #6b7280;
+}
