@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>顧客作成</title>
+    <script src="industry-codes.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        input, select { padding: 8px; margin: 5px 0; width: 250px; }
+        button { padding: 8px 15px; margin-top: 10px; }
+        table { border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px 12px; }
+    </style>
+</head>
+<body>
+
+<h2>顧客作成</h2>
+
+<input id="customerName" placeholder="顧客名">
+<br>
+
+<select id="industryCode">
+    <option value="">産業分類コード（小分類3桁）を選択</option>
+</select>
+<br>
+
+<button onclick="createCustomer()">顧客を登録</button>
+
+<h3>顧客一覧</h3>
+<table id="customerTable">
+    <tr>
+        <th>顧客名</th>
+        <th>産業分類</th>
+        <th>顧客コード</th>
+        <th>契約No.</th>
+        <th>削除</th>
+    </tr>
+</table>
+
+<script>
+// ------------------------------
+// 初期化：産業分類コードをプルダウンに追加
+// ------------------------------
+window.onload = function() {
+    const select = document.getElementById("industryCode");
+    INDUSTRY_CODES.forEach(code => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        select.appendChild(opt);
+    });
+    renderTable();
+};
+
+// ------------------------------
+// ローカルストレージ読み込み
+// ------------------------------
+let customers = JSON.parse(localStorage.getItem("customers") || "[]");
+
+// ------------------------------
+// 顧客コード自動発行（3桁 + 5桁）
+// ------------------------------
+function generateCustomerCode(industryCode) {
+    // 同じ産業分類の顧客を抽出
+    const filtered = customers.filter(c => c.industry === industryCode);
+
+    // 連番（00001〜99999）
+    const nextNumber = filtered.length + 1;
+    const numberPart = String(nextNumber).padStart(5, "0");
+
+    return `${industryCode}-${numberPart}`;
+}
+
+// ------------------------------
+// 契約No.自動発行（ランダム10桁）
+// ------------------------------
+function generateContractNo() {
+    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+}
+
+// ------------------------------
+// 顧客登録
+// ------------------------------
+function createCustomer() {
+    const name = document.getElementById("customerName").value;
+    const industry = document.getElementById("industryCode").value;
+
+    if (!name || !industry) {
+        alert("顧客名と産業分類コードを入力してください。");
+        return;
+    }
+
+    const customerCode = generateCustomerCode(industry);
+    const contractNo = generateContractNo();
+
+    customers.push({
+        name,
+        industry,
+        customerCode,
+        contractNo
+    });
+
+    localStorage.setItem("customers", JSON.stringify(customers));
+
+    document.getElementById("customerName").value = "";
+    document.getElementById("industryCode").value = "";
+
+    renderTable();
+}
+
+// ------------------------------
+// 顧客一覧表示
+// ------------------------------
+function renderTable() {
+    const table = document.getElementById("customerTable");
+    table.innerHTML = `
+        <tr>
+            <th>顧客名</th>
+            <th>産業分類</th>
+            <th>顧客コード</th>
+            <th>契約No.</th>
+            <th>削除</th>
+        </tr>
+    `;
+
+    customers.forEach((c, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${c.name}</td>
+            <td>${c.industry}</td>
+            <td>${c.customerCode}</td>
+            <td>${c.contractNo}</td>
+            <td><button onclick="deleteCustomer(${index})">削除</button></td>
+        `;
+        table.appendChild(row);
+    });
+}
+
+// ------------------------------
+// 顧客削除
+// ------------------------------
+function deleteCustomer(index) {
+    customers.splice(index, 1);
+    localStorage.setItem("customers", JSON.stringify(customers));
+    renderTable();
+}
+</script>
+
+</body>
+</html>

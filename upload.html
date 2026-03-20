@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>契約書アップロード</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        select, input, button { padding: 8px; margin: 5px 0; }
+        #preview { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<h2>契約書アップロード</h2>
+
+<select id="customerSelect">
+    <option value="">顧客を選択</option>
+</select>
+<br>
+
+<div>
+    <label>顧客コード：</label>
+    <span id="customerCode"></span>
+</div>
+
+<div>
+    <label>契約No.：</label>
+    <span id="contractNo"></span>
+</div>
+
+<br>
+
+<input type="file" id="pdfFile" accept="application/pdf">
+<br>
+
+<button onclick="uploadContract()">アップロード</button>
+
+<div id="message"></div>
+
+<script>
+// ------------------------------
+// 顧客データ読み込み
+// ------------------------------
+let customers = JSON.parse(localStorage.getItem("customers") || "[]");
+let contracts = JSON.parse(localStorage.getItem("contracts") || "[]");
+
+// ------------------------------
+// 顧客プルダウンに追加
+// ------------------------------
+window.onload = function() {
+    const select = document.getElementById("customerSelect");
+
+    customers.forEach((c, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = `${c.name}（${c.customerCode}）`;
+        select.appendChild(opt);
+    });
+
+    select.addEventListener("change", updateCustomerInfo);
+};
+
+// ------------------------------
+// 顧客選択時にコード表示
+// ------------------------------
+function updateCustomerInfo() {
+    const index = document.getElementById("customerSelect").value;
+
+    if (index === "") {
+        document.getElementById("customerCode").innerText = "";
+        document.getElementById("contractNo").innerText = "";
+        return;
+    }
+
+    const c = customers[index];
+
+    document.getElementById("customerCode").innerText = c.customerCode;
+    document.getElementById("contractNo").innerText = c.contractNo;
+}
+
+// ------------------------------
+// 契約書アップロード
+// ------------------------------
+function uploadContract() {
+    const index = document.getElementById("customerSelect").value;
+    const file = document.getElementById("pdfFile").files[0];
+
+    if (index === "") {
+        alert("顧客を選択してください。");
+        return;
+    }
+
+    if (!file) {
+        alert("PDFファイルを選択してください。");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const pdfData = e.target.result;
+
+        const c = customers[index];
+
+        // 契約データ保存
+        contracts.push({
+            customerName: c.name,
+            customerCode: c.customerCode,
+            contractNo: c.contractNo,
+            pdfData: pdfData,
+            status: "未締結",
+            uploadedAt: new Date().toISOString()
+        });
+
+        localStorage.setItem("contracts", JSON.stringify(contracts));
+
+        document.getElementById("message").innerHTML =
+            "<span style='color:green;'>契約書をアップロードしました。</span>";
+
+        document.getElementById("pdfFile").value = "";
+    };
+
+    reader.readAsDataURL(file);
+}
+</script>
+
+</body>
+</html>
