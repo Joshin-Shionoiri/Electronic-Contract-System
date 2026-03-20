@@ -2,40 +2,102 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>電子契約システム - ログイン</title>
+    <title>管理メニュー</title>
     <style>
-        body { font-family: sans-serif; padding: 40px; }
-        .box { width: 300px; margin: auto; }
-        input { width: 100%; padding: 10px; margin: 10px 0; }
-        button { width: 100%; padding: 10px; }
-        .error { color: red; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f4f6fb;
+            padding: 40px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .menu-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+        }
+
+        .menu-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .menu-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .menu-desc {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>電子契約システム</h2>
+<h1>管理メニュー</h1>
 
-    <input id="loginCode" placeholder="ログインコード">
-    <input id="password" type="password" placeholder="パスワード">
+<div class="menu-grid">
 
-    <div id="error" class="error"></div>
+    <div class="menu-card" onclick="location.href='customers.html'">
+        <div class="menu-icon">👥</div>
+        <div class="menu-title">顧客管理</div>
+        <div class="menu-desc">顧客登録・一覧・コード自動生成</div>
+    </div>
 
-    <button onclick="login()">ログイン</button>
+    <div class="menu-card" onclick="location.href='employees.html'">
+        <div class="menu-icon">🧑‍💼</div>
+        <div class="menu-title">社員管理</div>
+        <div class="menu-desc">社員登録・一覧・パスワード自動生成</div>
+    </div>
+
+    <div class="menu-card" onclick="location.href='contracts.html'">
+        <div class="menu-icon">📄</div>
+        <div class="menu-title">契約管理</div>
+        <div class="menu-desc">契約締結フロー・PDF保存/閲覧/印刷</div>
+    </div>
+
+    <div class="menu-card" onclick="location.href='barcode.html'">
+        <div class="menu-icon">🔖</div>
+        <div class="menu-title">バーコード作成</div>
+        <div class="menu-desc">顧客コードからバーコード生成</div>
+    </div>
+
 </div>
 
-<script>
-function login() {
-    const code = document.getElementById("loginCode").value;
-    const pass = document.getElementById("password").value;
-
-    if (code === "Joshin2012" && pass === "J.shio0106") {
-        window.location.href = "admin.html";
-    } else {
-        document.getElementById("error").innerText = "ログインコードまたはパスワードが違います。";
-    }
-}
-</script>
+<div class="footer">
+    © 上伸塾
+</div>
 
 </body>
 </html>
