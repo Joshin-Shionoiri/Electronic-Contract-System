@@ -3,250 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <title>マイページ</title>
-    <style>
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: #f4f6fb;
-            padding: 40px;
-            color: #333;
-        }
-
-        h2 {
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
-        .topbar {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-        }
-
-        .user-menu {
-            background: #ffffff;
-            padding: 10px 16px;
-            border-radius: 999px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .user-dropdown {
-            position: absolute;
-            right: 40px;
-            top: 60px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-            display: none;
-            overflow: hidden;
-        }
-
-        .user-dropdown div {
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .user-dropdown div:hover {
-            background: #f1f5f9;
-        }
-
-        .card {
-            background: white;
-            padding: 28px;
-            border-radius: 16px;
-            box-shadow: 0 4px 14px rgba(15,23,42,0.12);
-            max-width: 700px;
-            margin-bottom: 30px;
-        }
-
-        label {
-            font-weight: 600;
-            display: block;
-            margin-top: 16px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-top: 6px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            font-size: 15px;
-        }
-
-        input:focus {
-            outline: 2px solid #6366f1;
-            border-color: #6366f1;
-        }
-
-        button {
-            padding: 12px 20px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-
-        button:hover {
-            background: #4f46e5;
-        }
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        th {
-            background: #111827;
-            color: white;
-            padding: 10px;
-            font-size: 13px;
-        }
-
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-
-        tr:nth-child(even) {
-            background: #f9fafb;
-        }
-
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 12px;
-            color: #6b7280;
-        }
-    </style>
+    <link rel="stylesheet" href="common.css">
 </head>
 <body>
 
-<!-- 右上ユーザーメニュー -->
-<div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
-
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
-</div>
+<div id="common-header"></div>
+<script>
+fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
+</script>
 
 <h2>マイページ</h2>
 
-<!-- 基本情報 -->
 <div class="card">
-    <div class="section-title">基本情報</div>
-
+    <h3>基本情報</h3>
     <label>名前</label>
     <input id="nameInput">
-
     <label>メールアドレス</label>
-    <input id="emailInput" placeholder="例：example@mail.com">
-
+    <input id="emailInput">
     <label>電話番号</label>
-    <input id="phoneInput" placeholder="例：090-1234-5678">
-
+    <input id="phoneInput">
     <button onclick="saveProfile()">保存</button>
 </div>
 
-<!-- パスワード変更 -->
 <div class="card">
-    <div class="section-title">パスワード変更</div>
-
+    <h3>パスワード変更</h3>
     <label>新しいパスワード</label>
     <input id="newPass" type="password">
-
     <button onclick="changePassword()">パスワードを変更</button>
 </div>
 
-<!-- 顧客専用：契約一覧 -->
 <div class="card" id="customerContracts" style="display:none;">
-    <div class="section-title">契約一覧</div>
+    <h3>契約一覧</h3>
     <table id="contractsTable">
         <tr>
-            <th>契約ID</th>
+            <th>契約書番号</th>
             <th>プラン名</th>
             <th>PDF</th>
         </tr>
     </table>
 </div>
 
-<!-- 社員専用：権限情報 -->
 <div class="card" id="employeeInfo" style="display:none;">
-    <div class="section-title">権限情報</div>
+    <h3>権限情報</h3>
     <p>あなたは <strong>社員</strong> としてログインしています。</p>
     <p>全機能にアクセスできます。</p>
 </div>
 
 <div class="footer">© JOSHIN SYSTEMS</div>
 
+<script src="common.js"></script>
 <script>
-// ログイン情報
-const loginUser = JSON.parse(localStorage.getItem("loginUser") || "null");
-if (!loginUser) location.href = "login.html";
-
-// 名前表示
-document.getElementById("userNameDisplay").textContent = loginUser.name;
-
-// メニュー開閉
-function toggleUserMenu() {
-    const menu = document.getElementById("userDropdown");
-    menu.style.display = (menu.style.display === "block") ? "none" : "block";
-}
-
-// ログアウト
-function logout() {
-    localStorage.removeItem("loginUser");
-    location.href = "login.html";
-}
-
 // プロフィール初期表示
 document.getElementById("nameInput").value = loginUser.name || "";
 document.getElementById("emailInput").value = loginUser.email || "";
 document.getElementById("phoneInput").value = loginUser.phone || "";
 
-// 保存
 function saveProfile() {
     loginUser.name = document.getElementById("nameInput").value.trim();
     loginUser.email = document.getElementById("emailInput").value.trim();
     loginUser.phone = document.getElementById("phoneInput").value.trim();
-
     localStorage.setItem("loginUser", JSON.stringify(loginUser));
-
     alert("保存しました。");
     location.reload();
 }
 
-// パスワード変更
 function changePassword() {
     const newPass = document.getElementById("newPass").value.trim();
     if (!newPass) {
         alert("パスワードを入力してください。");
         return;
     }
-
     if (loginUser.type === "employee") {
         const employees = JSON.parse(localStorage.getItem("employees") || "[]");
         const user = employees.find(e => e.employeeCode === loginUser.code);
@@ -255,7 +81,6 @@ function changePassword() {
             localStorage.setItem("employees", JSON.stringify(employees));
         }
     }
-
     if (loginUser.type === "customer") {
         const customers = JSON.parse(localStorage.getItem("customers") || "[]");
         const user = customers.find(c => c.customerCode === loginUser.code);
@@ -264,32 +89,28 @@ function changePassword() {
             localStorage.setItem("customers", JSON.stringify(customers));
         }
     }
-
     alert("パスワードを変更しました。");
 }
 
-// 顧客なら契約一覧を表示
+// 顧客なら契約一覧
 if (loginUser.type === "customer") {
     document.getElementById("customerContracts").style.display = "block";
-
     const table = document.getElementById("contractsTable");
-
-    const request = indexedDB.open("contractsDB", 1);
-    request.onsuccess = function(event) {
-        const db = event.target.result;
+    const req = indexedDB.open("contractsDB", 1);
+    req.onsuccess = function(e) {
+        const db = e.target.result;
         const tx = db.transaction("contracts", "readonly");
         const store = tx.objectStore("contracts");
-
-        store.openCursor().onsuccess = function(event) {
-            const cursor = event.target.result;
+        store.openCursor().onsuccess = function(ev) {
+            const cursor = ev.target.result;
             if (cursor) {
                 const c = cursor.value;
                 if (c.customerCode === loginUser.code) {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>${c.contractID}</td>
+                        <td>${c.contractNumber}</td>
                         <td>${c.planName}</td>
-                        <td><button onclick="viewPDF('${c.contractID}')">閲覧</button></td>
+                        <td><button onclick="viewPDF('${c.contractNumber}')">閲覧</button></td>
                     `;
                     table.appendChild(row);
                 }
@@ -299,28 +120,30 @@ if (loginUser.type === "customer") {
     };
 }
 
-// 社員なら権限情報を表示
+// 社員なら権限情報
 if (loginUser.type === "employee") {
     document.getElementById("employeeInfo").style.display = "block";
 }
 
 // PDF閲覧
-function viewPDF(contractID) {
-    const request = indexedDB.open("contractsDB", 1);
-    request.onsuccess = function(event) {
-        const db = event.target.result;
+function viewPDF(contractNumber) {
+    const req = indexedDB.open("contractsDB", 1);
+    req.onsuccess = function(e) {
+        const db = e.target.result;
         const tx = db.transaction("contracts", "readonly");
         const store = tx.objectStore("contracts");
-
-        const req = store.get(contractID);
-        req.onsuccess = function() {
-            const blob = new Blob([req.result.pdfData], { type: "application/pdf" });
+        const g = store.get(contractNumber);
+        g.onsuccess = function() {
+            if (!g.result) {
+                alert("PDFが登録されていません。");
+                return;
+            }
+            const blob = new Blob([g.result.pdfData], { type: "application/pdf" });
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
         };
     };
 }
 </script>
-
 </body>
 </html>
