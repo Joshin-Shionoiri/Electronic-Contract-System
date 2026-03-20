@@ -12,7 +12,11 @@
             color: #1e293b;
         }
     </style>
+
+    <!-- バーコード（Code128） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+    <!-- QRコード -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -25,26 +29,32 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
 
 <h2>契約登録</h2>
 
+<!-- ① 顧客選択 -->
 <div class="card">
     <div class="section-title">① 顧客選択</div>
+
     <label>顧客コード（CU-000123）</label>
-<div style="display:flex; gap:10px; align-items:center;">
-    <input id="customerCode" style="flex:1;">
-    <button onclick="startCustomerBarcode()">バーコードを読み取る</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <input id="customerCode" style="flex:1;">
+        <button onclick="startCustomerBarcode()">バーコードを読み取る</button>
+    </div>
 </div>
 
-</div>
-
+<!-- ② 契約書番号 -->
 <div class="card">
     <div class="section-title">② 契約書番号</div>
-<label>契約書番号（CN-YYYYMMDD-XXXX）</label>
-<div style="display:flex; gap:10px; align-items:center;">
-    <input id="contractNumber" style="flex:1;">
-    <button onclick="scanContractQR()">QRを読み取る</button>
+
+    <label>契約書番号（CN-YYYYMMDD-XXXX）</label>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <input id="contractNumber" style="flex:1;">
+        <button onclick="scanContractQR()">QRを読み取る</button>
+    </div>
 </div>
 
+<!-- ③ 契約内容 -->
 <div class="card">
     <div class="section-title">③ 契約内容</div>
+
     <label>契約名</label>
     <input id="contractName">
 
@@ -58,6 +68,7 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
     <input type="number" id="price">
 </div>
 
+<!-- ④ 署名方式 -->
 <div class="card">
     <div class="section-title">④ 署名方式</div>
     <select id="signatureType">
@@ -67,11 +78,13 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
     </select>
 </div>
 
+<!-- ⑤ PDFアップロード -->
 <div class="card">
     <div class="section-title">⑤ 契約書PDFアップロード</div>
     <input type="file" id="pdfFile" accept="application/pdf">
 </div>
 
+<!-- 登録ボタン -->
 <div class="card">
     <button onclick="registerContract()">契約を登録する</button>
     <div id="errorArea" class="error"></div>
@@ -79,47 +92,9 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
 
 <script src="common.js"></script>
 <script>
-// ===============================
-// 顧客リスト読み込み
-// ===============================
-window.onload = async function() {
-    const customers = await loadCustomers();
-    const select = document.getElementById("customerSelect");
-
-    customers.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.customerCode;
-        opt.textContent = `${c.customerCode}：${c.name}`;
-        select.appendChild(opt);
-    });
-};
-
-// IndexedDB から顧客一覧を取得
-function loadCustomers() {
-    return new Promise((resolve) => {
-        const request = indexedDB.open("customersDB", 1);
-
-        request.onsuccess = function(event) {
-            const db = event.target.result;
-            const tx = db.transaction("customers", "readonly");
-            const store = tx.objectStore("customers");
-
-            const customers = [];
-            store.openCursor().onsuccess = function(e) {
-                const cursor = e.target.result;
-                if (cursor) {
-                    customers.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(customers);
-                }
-            };
-        };
-    });
-}
 
 // ===============================
-// 顧客バーコード読み取り（対面契約）
+// 顧客バーコード読み取り（Code128）
 // ===============================
 function startCustomerBarcode() {
     document.getElementById("scannerModal").style.display = "flex";
@@ -130,9 +105,7 @@ function startCustomerBarcode() {
             target: document.querySelector('#scanner'),
             constraints: { facingMode: "environment" }
         },
-        decoder: {
-            readers: ["code_128_reader"]
-        }
+        decoder: { readers: ["code_128_reader"] }
     }, function(err) {
         if (err) {
             alert("カメラを起動できませんでした。");
@@ -146,7 +119,6 @@ function startCustomerBarcode() {
 
         stopScanner();
 
-        // ★ 読み取った顧客コードを自動入力
         document.getElementById("customerCode").value = scannedCode;
     });
 }
@@ -158,68 +130,44 @@ function stopScanner() {
 
 
 // ===============================
-// 契約書番号のQR読み取り
+// 契約書番号 QR 読み取り
 // ===============================
-function startCustomerBarcode() {
-    document.getElementById("scannerModal").style.display = "flex";
+let qrScanner = null;
 
-    Quagga.init({
-        inputStream: {
-            type: "LiveStream",
-            target: document.querySelector('#scanner'),
-            constraints: { facingMode: "environment" }
-        },
-        decoder: {
-            readers: ["code_128_reader"]
+function scanContractQR() {
+    document.getElementById("qrModal").style.display = "flex";
+
+    qrScanner = new Html5Qrcode("qrReader");
+
+    qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+            document.getElementById("contractNumber").value = qrCodeMessage;
+            stopQR();
         }
-    }, function(err) {
-        if (err) {
-            alert("カメラを起動できませんでした。");
-            return;
-        }
-        Quagga.start();
-    });
-
-    Quagga.onDetected(function(result) {
-        const scannedCode = result.codeResult.code;
-
-        stopScanner();
-
-        // ★ 読み取った顧客コードを自動入力
-        document.getElementById("customerCode").value = scannedCode;
+    ).catch(err => {
+        alert("カメラを起動できませんでした：" + err);
+        stopQR();
     });
 }
 
-function stopScanner() {
-    Quagga.stop();
-    document.getElementById("scannerModal").style.display = "none";
+function stopQR() {
+    if (qrScanner) {
+        qrScanner.stop().catch(()=>{});
+        qrScanner.clear();
+        qrScanner = null;
+    }
+    document.getElementById("qrModal").style.display = "none";
 }
 
-
-// ===============================
-// 契約書番号フォーマットチェック
-// ===============================
-function validateContractNumber(num) {
-    const pattern = /^CN-\d{8}-\d{4}(_\d+)?$/;
-    return pattern.test(num);
-}
-
-// ===============================
-// PDF を ArrayBuffer に変換
-// ===============================
-function fileToArrayBuffer(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsArrayBuffer(file);
-    });
-}
 
 // ===============================
 // 契約登録処理
 // ===============================
 async function registerContract() {
-    const customerCode = document.getElementById("customerSelect").value;
+
+    const customerCode = document.getElementById("customerCode").value.trim();
     const contractNumber = document.getElementById("contractNumber").value.trim();
     const contractName = document.getElementById("contractName").value.trim();
     const startDate = document.getElementById("startDate").value;
@@ -231,24 +179,28 @@ async function registerContract() {
     const error = document.getElementById("errorArea");
     error.textContent = "";
 
-    // 入力チェック
-    if (!validateContractNumber(contractNumber)) {
+    if (!customerCode) {
+        error.textContent = "顧客コードを入力してください。";
+        return;
+    }
+
+    if (!/^CN-\d{8}-\d{4}(_\d+)?$/.test(contractNumber)) {
         error.textContent = "契約書番号の形式が正しくありません。";
         return;
     }
+
     if (!contractName || !startDate || !endDate || !price) {
         error.textContent = "契約内容をすべて入力してください。";
         return;
     }
+
     if (!pdfFile) {
         error.textContent = "契約書PDFをアップロードしてください。";
         return;
     }
 
-    // PDF を ArrayBuffer に変換
     const pdfData = await fileToArrayBuffer(pdfFile);
 
-    // IndexedDB に保存
     const request = indexedDB.open("contractsDB", 1);
 
     request.onsuccess = function(event) {
@@ -256,7 +208,7 @@ async function registerContract() {
         const tx = db.transaction("contracts", "readwrite");
         const store = tx.objectStore("contracts");
 
-        const contractData = {
+        store.put({
             contractNumber,
             customerCode,
             contractName,
@@ -267,61 +219,43 @@ async function registerContract() {
             pdfData,
             signature: null,
             signedAt: null
-        };
-
-        store.put(contractData);
+        });
 
         tx.oncomplete = function() {
             alert("契約を登録しました。顧客が署名できる状態になりました。");
         };
     };
 }
-let qrScanner = null;
 
-function scanContractQR() {
-    document.getElementById("qrModal").style.display = "flex";
-
-    qrScanner = new Html5Qrcode("qrReader");
-
-    qrScanner.start(
-        { facingMode: "environment" },
-        {
-            fps: 10,
-            qrbox: 250
-        },
-        qrCodeMessage => {
-            // 読み取った契約書番号を入力欄にセット
-            document.getElementById("contractNumber").value = qrCodeMessage;
-
-            stopQR();
-        },
-        errorMessage => {
-            // 読み取り中のエラーは無視してOK
-        }
-    ).catch(err => {
-        alert("カメラを起動できませんでした：" + err);
-        stopQR();
+function fileToArrayBuffer(file) {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsArrayBuffer(file);
     });
 }
 
-function stopQR() {
-    if (qrScanner) {
-        qrScanner.stop().catch(() => {});
-        qrScanner.clear();
-        qrScanner = null;
-    }
-    document.getElementById("qrModal").style.display = "none";
-}
-
 </script>
-<div id="scannerModal" style="display:none; ...">
+
+<!-- バーコード読み取りモーダル -->
+<div id="scannerModal" style="
+    display:none;
+    position:fixed;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
     <div style="background:white; padding:20px; text-align:center;">
         <h3>バーコードを読み取っています…</h3>
         <div id="scanner" style="width:300px; height:200px;"></div>
         <button onclick="stopScanner()">閉じる</button>
     </div>
 </div>
-    <div id="qrModal" style="
+
+<!-- QR読み取りモーダル -->
+<div id="qrModal" style="
     display:none;
     position:fixed;
     top:0; left:0; width:100%; height:100%;
@@ -336,7 +270,6 @@ function stopQR() {
         <button onclick="stopQR()">閉じる</button>
     </div>
 </div>
-
 
 </body>
 </html>
