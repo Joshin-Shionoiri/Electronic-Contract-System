@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者ログイン</title>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+
+<h2>管理者ログイン</h2>
+
+<div class="card">
+    <label>管理者ID</label>
+    <input id="adminId">
+
+    <label>パスワード</label>
+    <input id="adminPass" type="password">
+
+    <button onclick="adminLogin()">ログイン</button>
+    <div id="error" class="error"></div>
+</div>
+
+<script>
+function adminLogin() {
+    const id = document.getElementById("adminId").value.trim();
+    const pass = document.getElementById("adminPass").value.trim();
+    const error = document.getElementById("error");
+
+    const request = indexedDB.open("adminDB", 1);
+
+    request.onupgradeneeded = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("admins")) {
+            db.createObjectStore("admins", { keyPath: "adminId" });
+        }
+    };
+
+    request.onsuccess = function(e) {
+        const db = e.target.result;
+        const tx = db.transaction("admins", "readonly");
+        const store = tx.objectStore("admins");
+
+        const getReq = store.get(id);
+        getReq.onsuccess = function() {
+            const admin = getReq.result;
+
+            if (!admin || admin.password !== pass) {
+                error.textContent = "ID またはパスワードが違います。";
+                return;
+            }
+
+            sessionStorage.setItem("adminUser", JSON.stringify(admin));
+            location.href = "admin.html";
+        };
+    };
+}
+</script>
+
+</body>
+</html>
