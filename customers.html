@@ -43,14 +43,17 @@
 // ------------------------------
 window.onload = function() {
     const select = document.getElementById("industryCode");
-    INDUSTRY_CODES.forEach(code => {
+
+    INDUSTRY_CODES.forEach(item => {
         const opt = document.createElement("option");
-        opt.value = code;
-        opt.textContent = code;
+        opt.value = item.code;
+        opt.textContent = `${item.code} ${item.name}`;
         select.appendChild(opt);
     });
+
     renderTable();
 };
+
 
 // ------------------------------
 // ローカルストレージ読み込み
