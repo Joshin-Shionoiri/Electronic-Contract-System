@@ -123,7 +123,7 @@ function loginCustomer() {
 }
 
 // ===============================
-// 社員ログイン（簡易版）
+// 社員ログイン（DB版）
 // ===============================
 function loginEmployee() {
     const code = document.getElementById("employeeCode").value.trim();
@@ -132,21 +132,35 @@ function loginEmployee() {
 
     error.textContent = "";
 
-    // ★ 今は仮の固定ユーザー（後で employeesDB を作る）
-    if (code === "EM-000001" && pass === "password") {
-        loginUser = {
-            type: "employee",
-            code: code,
-            name: "社員 太郎"
+    const request = indexedDB.open("employeesDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("employees", "readonly");
+        const store = tx.objectStore("employees");
+
+        const getReq = store.get(code);
+
+        getReq.onsuccess = function() {
+            const emp = getReq.result;
+
+            if (!emp || emp.password !== pass) {
+                error.textContent = "社員コードまたはパスワードが正しくありません。";
+                return;
+            }
+
+            loginUser = {
+                type: "employee",
+                code: emp.employeeCode,
+                name: emp.name
+            };
+            sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
+
+            location.href = "employees.html";
         };
-        sessionStorage.setItem("loginUser", JSON.stringify(loginUser));
-
-        location.href = "employees.html";
-        return;
-    }
-
-    error.textContent = "社員コードまたはパスワードが正しくありません。";
+    };
 }
+
 </script>
 
 </body>
