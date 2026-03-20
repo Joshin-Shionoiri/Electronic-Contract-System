@@ -83,7 +83,148 @@ fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("c
 
 <script src="common.js"></script>
 <script>
-// ここにロジックを追加する
+// ===============================
+// IndexedDB 初期化
+// ===============================
+const dbRequest = indexedDB.open("customersDB", 1);
+
+dbRequest.onupgradeneeded = function(event) {
+    const db = event.target.result;
+    if (!db.objectStoreNames.contains("customers")) {
+        db.createObjectStore("customers", { keyPath: "customerCode" });
+    }
+};
+
+// ===============================
+// 顧客登録
+// ===============================
+async function registerCustomer() {
+    const customerCode = document.getElementById("customerCode").value.trim();
+    const name = document.getElementById("customerName").value.trim();
+    const birth = document.getElementById("customerBirth").value;
+    const tel = document.getElementById("customerTel").value.trim();
+    const mail = document.getElementById("customerMail").value.trim();
+    const address = document.getElementById("customerAddress").value.trim();
+
+    const error = document.getElementById("errorArea");
+    error.textContent = "";
+
+    // 顧客コード形式チェック
+    const pattern = /^CU-\d{6}$/;
+    if (!pattern.test(customerCode)) {
+        error.textContent = "顧客コードの形式が正しくありません。（例：CU-000123）";
+        return;
+    }
+
+    if (!name || !birth || !tel || !mail || !address) {
+        error.textContent = "すべての項目を入力してください。";
+        return;
+    }
+
+    const customerData = {
+        customerCode,
+        name,
+        birth,
+        tel,
+        mail,
+        address
+    };
+
+    const request = indexedDB.open("customersDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("customers", "readwrite");
+        const store = tx.objectStore("customers");
+
+        store.put(customerData);
+
+        tx.oncomplete = function() {
+            alert("顧客を登録しました。");
+            loadCustomerList();
+        };
+    };
+}
+
+// ===============================
+// 顧客一覧読み込み
+// ===============================
+function loadCustomerList() {
+    const request = indexedDB.open("customersDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("customers", "readonly");
+        const store = tx.objectStore("customers");
+
+        const tbody = document.querySelector("#customerTable tbody");
+        tbody.innerHTML = "";
+
+        store.openCursor().onsuccess = function(e) {
+            const cursor = e.target.result;
+            if (cursor) {
+                const c = cursor.value;
+
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${c.customerCode}</td>
+                    <td>${c.name}</td>
+                    <td>${c.birth}</td>
+                    <td>${c.tel}</td>
+                    <td>${c.mail}</td>
+                    <td>${c.address}</td>
+                    <td><svg id="barcode-${c.customerCode}"></svg></td>
+                    <td>
+                        <button onclick="deleteCustomer('${c.customerCode}')">削除</button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+
+                // バーコード生成（Code128）
+                JsBarcode(`#barcode-${c.customerCode}`, c.customerCode, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 40,
+                    displayValue: true
+                });
+
+                cursor.continue();
+            }
+        };
+    };
+}
+
+// ===============================
+// 顧客削除
+// ===============================
+function deleteCustomer(code) {
+    if (!confirm("本当に削除しますか？")) return;
+
+    const request = indexedDB.open("customersDB", 1);
+
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const tx = db.transaction("customers", "readwrite");
+        const store = tx.objectStore("customers");
+
+        store.delete(code);
+
+        tx.oncomplete = function() {
+            alert("削除しました。");
+            loadCustomerList();
+        };
+    };
+}
+
+// ===============================
+// ページ読み込み時に顧客一覧を表示
+// ===============================
+window.onload = function() {
+    loadCustomerList();
+};
+
 </script>
 
 </body>
