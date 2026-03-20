@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>ログイン</title>
+    <link rel="stylesheet" href="common.css">
     <style>
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: linear-gradient(135deg, #eef2ff, #f8fafc);
+        .login-wrap {
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0;
         }
-
         .login-card {
             background: white;
             width: 380px;
@@ -22,93 +19,43 @@
             box-shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
             text-align: center;
         }
-
-        h2 {
-            margin-bottom: 24px;
-            font-size: 24px;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        label {
-            display: block;
-            text-align: left;
-            margin-top: 16px;
-            font-weight: 600;
-            color: #334155;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 6px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            font-size: 15px;
-            box-sizing: border-box;
-        }
-
-        input:focus, select:focus {
-            outline: 2px solid #6366f1;
-            border-color: #6366f1;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 24px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #4f46e5;
-        }
-
         .error {
             color: #b91c1c;
             margin-top: 10px;
             font-size: 13px;
         }
-
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #64748b;
-        }
     </style>
 </head>
 <body>
 
-<div class="login-card">
-    <h2>ログイン</h2>
+<div class="login-wrap">
+    <div class="login-card">
+        <h2>ログイン</h2>
 
-    <label>ユーザー種別</label>
-    <select id="userType">
-        <option value="employee">社員ログイン</option>
-        <option value="customer">顧客ログイン</option>
-    </select>
+        <label>ユーザー種別</label>
+        <select id="userType">
+            <option value="employee">社員（社員証バーコード可）</option>
+            <option value="customer">顧客（情報通知書）</option>
+        </select>
 
-    <label>ユーザーID</label>
-    <input id="userID" placeholder="社員コード または 顧客コード">
+        <label>ユーザーID</label>
+        <input id="userID" placeholder="社員コード または 顧客コード">
 
-    <label>パスワード</label>
-    <input id="password" type="password" placeholder="パスワード">
+        <label>パスワード</label>
+        <input id="password" type="password" placeholder="パスワード">
 
-    <button onclick="login()">ログイン</button>
+        <button onclick="login()">ログイン</button>
+        <button onclick="startBarcodeLogin()">社員証バーコードでログイン</button>
 
-    <div id="error" class="error"></div>
+        <div id="error" class="error"></div>
 
-    <div class="footer">© JOSHIN SYSTEMS</div>
+        <div class="footer">© JOSHIN SYSTEMS</div>
+    </div>
 </div>
 
+<script src="common.js"></script>
 <script>
-// ログイン処理
+// 通常ログイン
 function login() {
     const type = document.getElementById("userType").value;
     const id = document.getElementById("userID").value.trim();
@@ -123,8 +70,12 @@ function login() {
     if (type === "employee") {
         const employees = JSON.parse(localStorage.getItem("employees") || "[]");
         const user = employees.find(e => e.employeeCode === id && e.password === pass);
-
         if (user) {
+            localStorage.setItem("loginUser", JSON.stringify({
+                type: "employee",
+                code: user.employeeCode,
+                name: user.employeeName
+            }));
             location.href = "index.html";
             return;
         }
@@ -133,8 +84,12 @@ function login() {
     if (type === "customer") {
         const customers = JSON.parse(localStorage.getItem("customers") || "[]");
         const user = customers.find(c => c.customerCode === id && c.password === pass);
-
         if (user) {
+            localStorage.setItem("loginUser", JSON.stringify({
+                type: "customer",
+                code: user.customerCode,
+                name: user.customerName
+            }));
             location.href = "index.html";
             return;
         }
@@ -142,7 +97,13 @@ function login() {
 
     error.textContent = "ID または パスワードが正しくありません。";
 }
-</script>
 
+// 社員証バーコードログイン（ライブラリは別途）
+function startBarcodeLogin() {
+    alert("カメラを起動して社員証バーコードを読み取る処理をここに実装（QuaggaJS 等）");
+    // 読み取ったコードを仮に EMP-000123 とする
+    // loginWithBarcodeEmployee("EMP-000123");
+}
+</script>
 </body>
 </html>
