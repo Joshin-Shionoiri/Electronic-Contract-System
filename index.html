@@ -2,46 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>メニュー</title>
+    <title>電子契約システム</title>
     <link rel="stylesheet" href="common.css">
-    <style>
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-        }
-        .menu-card {
-            background: white;
-            padding: 28px;
-            border-radius: 16px;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
-        }
-        .menu-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-        .menu-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        .menu-desc {
-            font-size: 13px;
-            color: #64748b;
-        }
-        .welcome {
-            font-size: 14px;
-            color: #475569;
-            margin-bottom: 20px;
-        }
-    </style>
 </head>
 <body>
 
@@ -50,42 +12,11 @@
 fetch("common-header.html").then(r=>r.text()).then(h=>document.getElementById("common-header").innerHTML=h);
 </script>
 
-<h1>メニュー</h1>
-<div class="welcome" id="welcomeText"></div>
+<h2>メニュー</h2>
 
-<div class="menu-grid" id="menuArea"></div>
+<div class="card">
+    <button onclick="location.href='login.html'">ログイン</button>
+</div>
 
-<div class="footer">© JOSHIN SYSTEMS</div>
-
-<script src="common.js"></script>
-<script>
-const menuArea = document.getElementById("menuArea");
-document.getElementById("welcomeText").textContent =
-    `${loginUser.name} としてログイン中`;
-
-function addMenu(icon, title, desc, link) {
-    const card = document.createElement("div");
-    card.className = "menu-card";
-    card.onclick = () => location.href = link;
-    card.innerHTML = `
-        <div class="menu-icon">${icon}</div>
-        <div class="menu-title">${title}</div>
-        <div class="menu-desc">${desc}</div>
-    `;
-    menuArea.appendChild(card);
-}
-
-if (loginUser.type === "employee") {
-    addMenu("👥", "顧客管理", "顧客登録・情報通知書発行", "customers.html");
-    addMenu("🧑‍💼", "社員管理", "社員登録・社員証バーコード", "employees.html");
-    addMenu("📄", "契約管理", "新規契約登録・契約一覧", "contracts.html");
-    addMenu("🔖", "バーコード作成", "各種バーコード生成", "barcode.html");
-}
-
-if (loginUser.type === "customer") {
-    addMenu("📄", "契約一覧", "自分の契約を確認・PDF閲覧", "mypage.html");
-    addMenu("➕", "新規契約", "契約書バーコード/番号で契約登録", "contracts.html");
-}
-</script>
 </body>
 </html>
