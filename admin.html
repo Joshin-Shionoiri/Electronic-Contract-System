@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>管理者メニュー</title>
+    <link rel="stylesheet" href="common.css">
 </head>
 <body>
 
-    <div class="topbar">
-    <div class="user-menu" onclick="toggleUserMenu()">
-        <span id="userNameDisplay"></span> ▼
-    </div>
-
-    <div class="user-dropdown" id="userDropdown">
-        <div onclick="location.href='mypage.html'">マイページ</div>
-        <div onclick="logout()">ログアウト</div>
-    </div>
-</div>
-
 <h2>管理者メニュー</h2>
 
-<ul>
-    <li><a href="employees.html">社員アカウント作成</a></li>
-    <li><a href="customers.html">顧客作成</a></li>
-    <li><a href="barcode.html">バーコード生成</a></li>
-    <li><a href="upload.html">契約書アップロード</a></li>
-    <li><a href="contracts.html">契約状況管理</a></li>
-</ul>
+<div class="card">
+    <button onclick="location.href='admin-employee-list.html'">社員アカウント管理</button>
+</div>
+
+<div class="card">
+    <button onclick="logout()">ログアウト</button>
+</div>
+
+<script>
+if (!sessionStorage.getItem("adminUser")) {
+    location.href = "admin-login.html";
+}
+
+function logout() {
+    sessionStorage.removeItem("adminUser");
+    location.href = "admin-login.html";
+}
+</script>
 
 </body>
 </html>
