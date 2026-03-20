@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>社員アカウント管理</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+        th {
+            background: #e2e8f0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>社員アカウント管理</h2>
+
+<!-- 管理者チェック -->
+<script>
+if (!sessionStorage.getItem("adminUser")) {
+    location.href = "admin-login.html";
+}
+</script>
+
+<div class="card">
+    <div class="section-title">① 新規社員アカウント作成</div>
+
+    <label>社員コード（例：EM-0001）</label>
+    <input id="newCode">
+
+    <label>氏名</label>
+    <input id="newName">
+
+    <label>パスワード</label>
+    <input id="newPass" type="password">
+
+    <label>権限</label>
+    <select id="newRole">
+        <option value="employee">一般社員</option>
+        <option value="manager">管理権限あり</option>
+    </select>
+
+    <button onclick="createEmployee()">作成する</button>
+    <div id="createError" class="error"></div>
+</div>
+
+<div class="card">
+    <div class="section-title">② 社員一覧</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>社員コード</th>
+                <th>氏名</th>
+                <th>権限</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="employeeTable"></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <button onclick="location.href='admin.html'">管理者メニューに戻る</button>
+</div>
+
+<script>
+// ===============================
+// IndexedDB: employeeDB
+// ===============================
+function openEmployeeDB() {
+    return new Promise(resolve => {
+        const request = indexedDB.open("employeeDB", 1);
+
+        request.onupgradeneeded = function(e) {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("employees")) {
+                db.createObjectStore("employees", { keyPath: "employeeCode" });
+            }
+        };
+
+        request.onsuccess = function(e) {
+            resolve(e.target.result);
+        };
+    });
+}
+
+// ===============================
+// 社員一覧を読み込む
+// ===============================
+async function loadEmployees() {
+    const db = await openEmployeeDB();
+    const tx = db.transaction("employees", "readonly");
+    const store = tx.objectStore("employees");
+
+    const table = document.getElementById("employeeTable");
+    table.innerHTML = "";
+
+    store.openCursor().onsuccess = function(e) {
+        const cursor = e.target.result;
+        if (cursor) {
+            const emp = cursor.value;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${emp.employeeCode}</td>
+                <td>${emp.name}</td>
+                <td>
+                    <select onchange="changeRole('${emp.employeeCode}', this.value)">
+                        <option value="employee" ${emp.role === "employee" ? "selected" : ""}>一般社員</option>
+                        <option value="manager" ${emp.role === "manager" ? "selected" : ""}>管理権限あり</option>
+                    </select>
+                </td>
+                <td>
+                    <button onclick="deleteEmployee('${emp.employeeCode}')">削除</button>
+                </td>
+            `;
+            table.appendChild(tr);
+
+            cursor.continue();
+        }
+    };
+}
+
+// ===============================
+// 新規社員作成
+// ===============================
+async function createEmployee() {
+    const code = document.getElementById("newCode").value.trim();
+    const name = document.getElementById("newName").value.trim();
+    const pass = document.getElementById("newPass").value.trim();
+    const role = document.getElementById("newRole").value;
+    const error = document.getElementById("createError");
+
+    error.textContent = "";
+
+    if (!code || !name || !pass) {
+        error.textContent = "すべて入力してください。";
+        return;
+    }
+
+    const db = await openEmployeeDB();
+    const tx = db.transaction("employees", "readwrite");
+    const store = tx.objectStore("employees");
+
+    store.put({
+        employeeCode: code,
+        name,
+        password: pass,
+        role
+    });
+
+    tx.oncomplete = function() {
+        alert("社員アカウントを作成しました。");
+        loadEmployees();
+    };
+}
+
+// ===============================
+// 権限変更
+// ===============================
+async function changeRole(code, newRole) {
+    const db = await openEmployeeDB();
+    const tx = db.transaction("employees", "readwrite");
+    const store = tx.objectStore("employees");
+
+    const getReq = store.get(code);
+    getReq.onsuccess = function() {
+        const emp = getReq.result;
+        emp.role = newRole;
+        store.put(emp);
+    };
+}
+
+// ===============================
+// 社員削除
+// ===============================
+async function deleteEmployee(code) {
+    if (!confirm("本当に削除しますか？")) return;
+
+    const db = await openEmployeeDB();
+    const tx = db.transaction("employees", "readwrite");
+    const store = tx.objectStore("employees");
+
+    store.delete(code);
+
+    tx.oncomplete = function() {
+        alert("削除しました。");
+        loadEmployees();
+    };
+}
+
+// 初期ロード
+loadEmployees();
+</script>
+
+</body>
+</html>
