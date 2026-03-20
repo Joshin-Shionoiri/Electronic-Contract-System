@@ -7,12 +7,18 @@
 
     <!-- バーコード読み取り用 QuaggaJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <!-- QRコード読み取り用 html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         .section-title {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 10px;
+        }
+        @keyframes scanMove {
+            0% { top:0; }
+            100% { top: calc(100% - 3px); }
         }
     </style>
 </head>
@@ -26,7 +32,9 @@
     <label>ログインID（CU-000123 / EM-0001）</label>
     <div style="display:flex; gap:10px; align-items:center;">
         <input id="loginCode" style="flex:1;">
-        <button onclick="scanBarcode()">バーコードを読み取る</button>
+        <button onclick="startBarcodeReader(code => { document.getElementById('loginCode').value = code; })">
+            バーコードを読み取る
+        </button>
     </div>
 
     <label>パスワード</label>
@@ -41,58 +49,203 @@
     <button onclick="location.href='admin-login.html'">管理者ログインへ</button>
 </div>
 
-<!-- バーコード読み取りモーダル -->
-<div id="scannerModal" style="
+<!-- 読み取りモーダル（バーコード & QR 共通） -->
+<div id="readerModal" style="
     display:none;
     position:fixed;
     top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.8);
+    background:rgba(0,0,0,0.85);
     z-index:9999;
     justify-content:center;
     align-items:center;
 ">
-    <div style="background:white; padding:20px; text-align:center;">
-        <h3>バーコードを読み取っています…</h3>
-        <div id="scanner" style="width:300px; height:200px;"></div>
-        <button onclick="stopScanner()">閉じる</button>
+
+    <!-- 左上の × ボタン -->
+    <button onclick="closeReader()" style="
+        position:absolute;
+        top:15px;
+        left:15px;
+        font-size:32px;
+        background:none;
+        border:none;
+        color:white;
+        cursor:pointer;
+        padding:10px;
+    ">×</button>
+
+    <div style="background:white; padding:20px; text-align:center; border-radius:8px; position:relative;">
+
+        <h3 id="readerTitle">読み取り中…</h3>
+
+        <!-- 枠（白→緑に変わる） -->
+        <div id="scanFrame" style="
+            width:300px;
+            height:200px;
+            border:4px solid white;
+            border-radius:10px;
+            position:relative;
+            overflow:hidden;
+            margin:auto;
+        ">
+
+            <!-- スキャンアニメーション（赤いライン） -->
+            <div id="scanLine" style="
+                position:absolute;
+                top:0;
+                left:0;
+                width:100%;
+                height:3px;
+                background:red;
+                animation: scanMove 2s linear infinite;
+                opacity:0.7;
+            "></div>
+
+            <!-- バーコード用 -->
+            <div id="barcodeArea" style="
+                width:100%;
+                height:100%;
+                display:none;
+            "></div>
+
+            <!-- QR用（今回は使わないが共通化しておく） -->
+            <div id="qrArea" style="
+                width:100%;
+                height:100%;
+                display:none;
+            "></div>
+
+        </div>
+
+        <button onclick="closeReader()">閉じる</button>
     </div>
 </div>
 
+<!-- ピッ音 -->
+<audio id="beepSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
 <script>
+let qrScanner = null;
+let barcodeActive = false;
+let detectedOnce = false;
+
 // ===============================
-// バーコード読み取り（顧客・社員共通）
+// バーコード読み取り開始（Code128）
 // ===============================
-function scanBarcode() {
-    document.getElementById("scannerModal").style.display = "flex";
+function startBarcodeReader(onDetectedCallback) {
+    barcodeActive = true;
+    detectedOnce = false;
+
+    document.getElementById("readerModal").style.display = "flex";
+    document.getElementById("readerTitle").textContent = "バーコードを読み取っています…";
+    document.getElementById("barcodeArea").style.display = "block";
+    document.getElementById("qrArea").style.display = "none";
+
+    // 枠を白に戻す
+    document.getElementById("scanFrame").style.borderColor = "white";
 
     Quagga.init({
         inputStream: {
             type: "LiveStream",
-            target: document.querySelector('#scanner'),
+            target: document.querySelector('#barcodeArea'),
             constraints: { facingMode: "environment" }
         },
         decoder: { readers: ["code_128_reader"] }
     }, function(err) {
         if (err) {
             alert("カメラを起動できませんでした：" + err);
+            closeReader();
             return;
         }
         Quagga.start();
     });
 
     Quagga.onDetected(function(result) {
+        if (detectedOnce) return;
+        detectedOnce = true;
+
+        // 枠を緑にする
+        document.getElementById("scanFrame").style.borderColor = "#22c55e";
+
+        // ピッ音
+        const beep = document.getElementById("beepSound");
+        if (beep) {
+            beep.currentTime = 0;
+            beep.play().catch(()=>{});
+        }
+
         const code = result.codeResult.code;
 
-        stopScanner();
-
-        // ★ 読み取ったコードを自動入力
-        document.getElementById("loginCode").value = code;
+        setTimeout(() => {
+            closeReader();
+            onDetectedCallback(code);
+        }, 300);
     });
 }
 
-function stopScanner() {
-    Quagga.stop();
-    document.getElementById("scannerModal").style.display = "none";
+
+// ===============================
+// QR読み取り開始（必要なページで使えるように共通化）
+// ===============================
+function startQRReader(onDetectedCallback) {
+    barcodeActive = false;
+    detectedOnce = false;
+
+    document.getElementById("readerModal").style.display = "flex";
+    document.getElementById("readerTitle").textContent = "QRコードを読み取っています…";
+    document.getElementById("barcodeArea").style.display = "none";
+    document.getElementById("qrArea").style.display = "block";
+
+    // 枠を白に戻す
+    document.getElementById("scanFrame").style.borderColor = "white";
+
+    qrScanner = new Html5Qrcode("qrArea");
+
+    qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrMessage => {
+            if (detectedOnce) return;
+            detectedOnce = true;
+
+            // 枠を緑にする
+            document.getElementById("scanFrame").style.borderColor = "#22c55e";
+
+            // ピッ音
+            const beep = document.getElementById("beepSound");
+            if (beep) {
+                beep.currentTime = 0;
+                beep.play().catch(()=>{});
+            }
+
+            setTimeout(() => {
+                closeReader();
+                onDetectedCallback(qrMessage);
+            }, 300);
+        }
+    ).catch(err => {
+        alert("カメラを起動できませんでした：" + err);
+        closeReader();
+    });
+}
+
+
+// ===============================
+// 閉じる（× ボタン / 閉じるボタン）
+// ===============================
+function closeReader() {
+    // バーコード停止
+    if (barcodeActive) {
+        try { Quagga.stop(); } catch(e){}
+    }
+
+    // QR停止
+    if (qrScanner) {
+        qrScanner.stop().catch(()=>{});
+        qrScanner.clear();
+        qrScanner = null;
+    }
+
+    document.getElementById("readerModal").style.display = "none";
 }
 
 
@@ -110,13 +263,11 @@ function login() {
         return;
     }
 
-    // 顧客ログイン
     if (code.startsWith("CU-")) {
         loginCustomer(code, pass);
         return;
     }
 
-    // 社員ログイン
     if (code.startsWith("EM-")) {
         loginEmployee(code, pass);
         return;
@@ -126,9 +277,7 @@ function login() {
 }
 
 
-// ===============================
 // 顧客ログイン
-// ===============================
 function loginCustomer(code, pass) {
     const request = indexedDB.open("customersDB", 1);
 
@@ -146,7 +295,6 @@ function loginCustomer(code, pass) {
                 return;
             }
 
-            // パスワードチェック（必要なら）
             if (customer.password && customer.password !== pass) {
                 document.getElementById("errorArea").textContent = "パスワードが違います。";
                 return;
@@ -159,9 +307,7 @@ function loginCustomer(code, pass) {
 }
 
 
-// ===============================
 // 社員ログイン
-// ===============================
 function loginEmployee(code, pass) {
     const request = indexedDB.open("employeeDB", 1);
 
