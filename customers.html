@@ -27,6 +27,7 @@
 <h3>顧客一覧</h3>
 <table id="customersTable">
     <tr>
+        <th>顧客コード</th>
         <th>顧客名</th>
         <th>業種コード</th>
         <th>業種名</th>
@@ -65,6 +66,17 @@ function registerIndustry(name) {
 // ------------------------------
 let customers = JSON.parse(localStorage.getItem("customers") || "[]");
 
+// 顧客コード自動発行（3桁-5桁）
+function generateCustomerCode(industryCode) {
+    // 同じ業種コードの顧客を抽出
+    const sameIndustry = customers.filter(c => c.industryCode === industryCode);
+
+    // その業種内での連番（5桁）
+    const nextNumber = String(sameIndustry.length + 1).padStart(5, "0");
+
+    return `${industryCode}-${nextNumber}`;
+}
+
 // 顧客登録
 function registerCustomer() {
     const name = document.getElementById("customerName").value.trim();
@@ -78,7 +90,11 @@ function registerCustomer() {
     // 業種コードを自動発行
     const industryCode = registerIndustry(industryName);
 
+    // 顧客コードを自動発行
+    const customerCode = generateCustomerCode(industryCode);
+
     customers.push({
+        customerCode: customerCode,
         customerName: name,
         industryCode: industryCode,
         industryName: industryName
@@ -100,6 +116,7 @@ function renderTable() {
 
     table.innerHTML = `
         <tr>
+            <th>顧客コード</th>
             <th>顧客名</th>
             <th>業種コード</th>
             <th>業種名</th>
@@ -109,6 +126,7 @@ function renderTable() {
     customers.forEach(c => {
         const row = document.createElement("tr");
         row.innerHTML = `
+            <td>${c.customerCode}</td>
             <td>${c.customerName}</td>
             <td>${c.industryCode}</td>
             <td>${c.industryName}</td>
