@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h3>初期管理者作成</h3>
+
+<label>ID</label>
+<input id="id">
+
+<label>パスワード</label>
+<input id="pass">
+
+<button onclick="createAdmin()">作成</button>
+
+<script>
+function createAdmin() {
+    const id = document.getElementById("id").value;
+    const pass = document.getElementById("pass").value;
+
+    const request = indexedDB.open("adminDB", 1);
+
+    request.onupgradeneeded = function(e) {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("admins")) {
+            db.createObjectStore("admins", { keyPath: "adminId" });
+        }
+    };
+
+    request.onsuccess = function(e) {
+        const db = e.target.result;
+        const tx = db.transaction("admins", "readwrite");
+        const store = tx.objectStore("admins");
+
+        store.put({ adminId: id, password: pass });
+
+        tx.oncomplete = function() {
+            alert("管理者を作成しました！");
+        };
+    };
+}
+</script>
+
+</body>
+</html>
